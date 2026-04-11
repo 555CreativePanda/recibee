@@ -59,8 +59,16 @@ service cloud.firestore {
              data.ingredients is list && data.ingredients.size() < 100 &&
              data.steps is list && data.steps.size() < 100 &&
              data.user_id == request.auth.uid &&
-             (!('source_url' in data) || isValidUrl(data.source_url)) &&
-             (!('parent_id' in data) || isValidString(data.parent_id, 100));
+             (!('source_url' in data) || data.source_url == null || data.source_url == "" || isValidUrl(data.source_url)) &&
+             (!('parent_id' in data) || data.parent_id == null || isValidString(data.parent_id, 100)) &&
+             (!('prep_time' in data) || data.prep_time == null || data.prep_time is string) &&
+             (!('cook_time' in data) || data.cook_time == null || data.cook_time is string) &&
+             (!('servings' in data) || data.servings == null || data.servings is string) &&
+             (!('cuisine' in data) || data.cuisine == null || data.cuisine is string) &&
+             (!('course' in data) || data.course == null || data.course is string) &&
+             (!('notes' in data) || data.notes == null || data.notes is string) &&
+             (!('equipment' in data) || data.equipment is list) &&
+             (!('keywords' in data) || data.keywords is list);
     }
 
     function isValidUser(data) {

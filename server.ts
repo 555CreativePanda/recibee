@@ -5,10 +5,14 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import 'dotenv/config';
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Trust proxy is required for rate limiting behind Cloud Run/GFE
+  app.set('trust proxy', 1);
 
   // Security headers - temporarily disabled to debug Auth issues
   app.use(helmet({
@@ -26,6 +30,7 @@ async function startServer() {
     message: { error: 'Too many requests from this IP, please try again after 15 minutes' },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false }, // Suppress proxy validation warnings
   });
 
   app.use('/api/', apiLimiter);
@@ -467,7 +472,13 @@ async function startServer() {
   }
 
   if (ingredients.length === 0 && steps.length === 0) {
-    return res.status(422).json({ error: 'No recipe found at this URL. Please ensure the link contains a valid recipe with ingredients and instructions.' });
+    // If standard extraction fails, return the raw text so the frontend can use Gemini
+    const pageText = $('body').text().replace(/\s+/g, ' ').substring(0, 15000);
+    return res.json({ 
+      needsAI: true, 
+      rawText: pageText,
+      title: decodeHtml(title) || 'Imported Recipe'
+    });
   }
 
   res.json({

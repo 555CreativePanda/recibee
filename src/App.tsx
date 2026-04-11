@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 're
 import { db, auth, googleProvider, signOut, onAuthStateChanged, User } from './lib/firebase';
 import { collection, query, where, getDocs, getDoc, addDoc, updateDoc, doc, orderBy, onSnapshot, setDoc, serverTimestamp, limit } from 'firebase/firestore';
 import { Recipe } from './types';
+import { GoogleGenAI } from '@google/genai';
 import { RecipeEditor } from './components/RecipeEditor';
 import { AuthModal } from './components/AuthModal';
 import { cn } from './lib/utils';
@@ -199,8 +200,50 @@ function AppContent() {
         body: JSON.stringify({ url: normalizedUrl })
       });
 
-      const data = await response.json();
+      let data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to import');
+
+      // If standard extraction failed, use Gemini AI
+      if (data.needsAI) {
+        try {
+          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+          const prompt = `
+            Extract the recipe from the following text. 
+            Return ONLY a JSON object with this structure:
+            {
+              "title": "string",
+              "ingredients": [{"item": "string", "amount": "string", "unit": "string"}],
+              "steps": ["string"],
+              "prep_time": "string or null",
+              "cook_time": "string or null",
+              "servings": "string or null",
+              "cuisine": "string or null",
+              "course": "string or null",
+              "keywords": ["string"]
+            }
+            
+            Text:
+            ${data.rawText}
+          `;
+
+          const aiResponse = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+          });
+
+          const text = aiResponse.text;
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const aiData = JSON.parse(jsonMatch[0]);
+            data = { ...aiData, notes: null };
+          } else {
+            throw new Error('AI failed to parse recipe data');
+          }
+        } catch (aiError: any) {
+          console.error('Frontend Gemini extraction failed:', aiError);
+          throw new Error('Could not extract recipe automatically. Please try a different URL or enter manually.');
+        }
+      }
 
       const newRecipe: Recipe = {
         id: 'temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9),
