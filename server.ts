@@ -3,12 +3,40 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Security headers
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "img-src": ["'self'", "data:", "https:", "http:"],
+        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Needed for Vite/React
+        "connect-src": ["'self'", "https:", "http:", "wss:", "ws:"],
+        "frame-ancestors": ["'self'", "https://*.google.com", "https://*.googleusercontent.com", "https://*.run.app"],
+      },
+    },
+    frameguard: false, // Allow embedding in iframes (AI Studio)
+    crossOriginEmbedderPolicy: false,
+  }));
+
   app.use(express.json());
+
+  // Rate limiting for API routes
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: { error: 'Too many requests from this IP, please try again after 15 minutes' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  app.use('/api/', apiLimiter);
 
   // Helper to decode HTML entities and clean text
   const decodeHtml = (str: string) => {
@@ -64,14 +92,24 @@ async function startServer() {
     }
 
     // Validate URL
+    let targetUrl: URL;
     try {
-      new URL(url);
+      targetUrl = new URL(url);
+      if (!['http:', 'https:'].includes(targetUrl.protocol)) {
+        return res.status(400).json({ error: 'Only HTTP and HTTPS protocols are allowed.' });
+      }
+      
+      // Prevent access to internal networks (basic check)
+      const hostname = targetUrl.hostname.toLowerCase();
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
+        return res.status(400).json({ error: 'Access to internal network addresses is forbidden.' });
+      }
     } catch (e) {
       return res.status(400).json({ error: 'Invalid URL format. Please provide a valid web address.' });
     }
 
-    const fetchWithRetry = async (targetUrl: string, useProxy = false): Promise<any> => {
-      const finalUrl = useProxy ? `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}` : targetUrl;
+    const fetchWithRetry = async (urlToFetch: string, useProxy = false): Promise<any> => {
+      const finalUrl = useProxy ? `https://api.allorigins.win/raw?url=${encodeURIComponent(urlToFetch)}` : urlToFetch;
       return axios.get(finalUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',

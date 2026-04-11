@@ -1,10 +1,11 @@
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { ChefHat, GitBranch, Download, Star, Users, ArrowRight, Github, Globe, Zap, Code, Terminal, Search, Shield } from 'lucide-react';
+import { ChefHat, GitBranch, Download, Star, Users, ArrowRight, Github, Globe, Zap, Code, Terminal, Search, Shield, Menu, X as CloseIcon } from 'lucide-react';
 import { SEO } from '../components/SEO';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 export function LandingPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -36,7 +37,9 @@ export function LandingPage() {
             </div>
             <h1 className="text-xl font-bold tracking-tighter">ReciBee<span className="text-carbon-blue-60">/_</span></h1>
           </Link>
-          <div className="flex items-center gap-8">
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-8">
             <Link to="/explore" className="text-xs font-mono uppercase tracking-widest text-carbon-gray-30 hover:text-white transition-colors">Explore</Link>
             <Link to="/docs" className="text-xs font-mono uppercase tracking-widest text-carbon-gray-30 hover:text-white transition-colors">Docs</Link>
             <Link to="/api-docs" className="text-xs font-mono uppercase tracking-widest text-carbon-gray-30 hover:text-white transition-colors">API</Link>
@@ -47,7 +50,58 @@ export function LandingPage() {
               Launch
             </Link>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden text-carbon-gray-30 hover:text-white transition-colors"
+          >
+            {isMenuOpen ? <CloseIcon size={24} /> : <Menu size={24} />}
+          </button>
         </div>
+
+        {/* Mobile Navigation Overlay */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden absolute top-full left-0 right-0 bg-carbon-gray-100 border-b border-carbon-gray-80 overflow-hidden"
+            >
+              <div className="flex flex-col p-6 gap-6">
+                <Link 
+                  to="/explore" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="text-sm font-mono uppercase tracking-widest text-carbon-gray-30 hover:text-white transition-colors"
+                >
+                  Explore
+                </Link>
+                <Link 
+                  to="/docs" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="text-sm font-mono uppercase tracking-widest text-carbon-gray-30 hover:text-white transition-colors"
+                >
+                  Docs
+                </Link>
+                <Link 
+                  to="/api-docs" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="text-sm font-mono uppercase tracking-widest text-carbon-gray-30 hover:text-white transition-colors"
+                >
+                  API
+                </Link>
+                <Link 
+                  to="/explore" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white px-5 py-3 text-sm font-mono uppercase tracking-widest transition-all text-center"
+                >
+                  Launch App
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.nav>
 
       {/* Hero Section */}

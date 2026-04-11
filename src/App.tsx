@@ -353,29 +353,36 @@ function AppContent() {
                 </div>
               </Link>
 
-              {location.pathname === '/explore' && (
-                <div className="hidden sm:flex items-center ml-8 gap-6">
-                  <Link to="/explore" className={cn(
-                    "text-sm font-medium transition-colors hover:text-carbon-blue-60",
-                    location.pathname === '/explore' ? "text-carbon-blue-60" : "text-carbon-gray-30"
-                  )}>
-                  </Link>
-                </div>
-              )}
-
-              {/* Mobile/Tablet User Actions */}
-              <div className="flex lg:hidden items-center gap-3">
+              {/* Mobile/Tablet Actions */}
+              <div className="flex lg:hidden items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (ensureAuth('import recipes')) {
+                      setIsImportModalOpen(true);
+                    }
+                  }}
+                  className="p-2 text-carbon-gray-30 hover:text-white transition-colors border border-carbon-gray-80"
+                  title="Import from URL"
+                >
+                  <Download size={18} />
+                </button>
+                <button
+                  onClick={handleCreate}
+                  className="p-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white transition-colors"
+                  title="New Recipe"
+                >
+                  <Plus size={18} />
+                </button>
+                <div className="w-[1px] h-6 bg-carbon-gray-80 mx-1" />
                 {user ? (
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      {user.photoURL ? (
-                        <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full border border-carbon-gray-80" referrerPolicy="no-referrer" />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-carbon-gray-80 flex items-center justify-center">
-                          <UserIcon size={14} className="text-carbon-gray-30" />
-                        </div>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2">
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full border border-carbon-gray-80" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-carbon-gray-80 flex items-center justify-center">
+                        <UserIcon size={14} className="text-carbon-gray-30" />
+                      </div>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="p-2 text-carbon-gray-30 hover:text-white transition-colors"
@@ -406,27 +413,6 @@ function AppContent() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-carbon-gray-100 border border-carbon-gray-80 pl-10 pr-4 py-2 text-sm outline-none focus:border-carbon-blue-60 transition-colors"
                 />
-              </div>
-
-              <div className="flex items-center gap-2 lg:hidden">
-                <button
-                  onClick={() => {
-                    if (ensureAuth('import recipes')) {
-                      setIsImportModalOpen(true);
-                    }
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 border border-carbon-gray-80 hover:bg-carbon-gray-80 text-white px-3 py-2 text-xs font-medium transition-colors"
-                >
-                  <Download size={14} />
-                  Import
-                </button>
-                <button
-                  onClick={handleCreate}
-                  className="flex-1 flex items-center justify-center gap-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white px-3 py-2 text-xs font-medium transition-colors"
-                >
-                  <Plus size={14} />
-                  New
-                </button>
               </div>
             </div>
 

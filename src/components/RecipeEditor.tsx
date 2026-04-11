@@ -462,7 +462,7 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
                     </span>
                   )}
                   <input
-                    ref={el => ingredientRefs.current[idx] = el}
+                    ref={el => { ingredientRefs.current[idx] = el; }}
                     placeholder={ing.isHeader ? "Section Header (e.g. For Garnish)" : "Item"}
                     value={ing.item}
                     onChange={(e) => {
@@ -571,7 +571,7 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
                     </p>
                   )}
                   <textarea
-                    ref={el => stepRefs.current[idx] = el}
+                    ref={el => { stepRefs.current[idx] = el; }}
                     value={step.text}
                     onChange={(e) => {
                       updateStep(idx, e.target.value);

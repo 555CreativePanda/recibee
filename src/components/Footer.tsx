@@ -19,7 +19,7 @@ export function Footer() {
           <Link to="/api-docs" className="hover:text-white transition-colors">API Reference</Link>
           <Link to="/features" className="hover:text-white transition-colors">Request a Feature</Link>
           <Link to="/status" className="hover:text-white transition-colors">Status</Link>
-          <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
+          <a href="https://github.com/555CreativePanda/recibee" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
         </div>
         
         <div className="text-[10px] font-mono text-carbon-gray-80">
