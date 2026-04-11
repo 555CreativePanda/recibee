@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-carbon-gray-100: #161616;
+  --color-carbon-gray-90: #262626;
+  --color-carbon-gray-80: #393939;
+  --color-carbon-blue-60: #0f62fe;
+  --color-carbon-blue-70: #0043ce;
+  --color-carbon-white: #ffffff;
+  --color-carbon-gray-30: #c6c6c6;
+}
+
+@layer base {
+  body {
+    @apply bg-carbon-gray-100 text-carbon-white font-sans antialiased;
+  }
+}
+
+/* Carbon Table Styles */
+.carbon-table {
+  @apply w-full border-collapse text-sm;
+}
+
+.carbon-table th {
+  @apply bg-carbon-gray-90 text-carbon-gray-30 font-medium text-left p-4 border-b border-carbon-gray-80;
+}
+
+.carbon-table td {
+  @apply p-4 border-b border-carbon-gray-80 align-top;
+}
+
+.carbon-table tr:hover td {
+  @apply bg-carbon-gray-80;
+}
+

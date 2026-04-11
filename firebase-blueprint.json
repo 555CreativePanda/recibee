@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "Recipe": {
+      "title": "Recipe",
+      "description": "A cooking recipe",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "ingredients": { "type": "array" },
+        "original_ingredients": { "type": "array" },
+        "steps": { "type": "array" },
+        "parent_id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "source_url": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "ingredients", "steps", "user_id"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A user profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Star": {
+      "title": "Star",
+      "description": "A user's star on a recipe",
+      "type": "object",
+      "properties": {
+        "recipe_id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["recipe_id", "user_id"]
+    },
+    "FeatureRequest": {
+      "title": "FeatureRequest",
+      "description": "A user's request for a new feature",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "user_id": { "type": "string" },
+        "user_email": { "type": "string" },
+        "upvotes": { "type": "number" },
+        "downvotes": { "type": "number" },
+        "score": { "type": "number" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "user_id"]
+    },
+    "FeatureVote": {
+      "title": "FeatureVote",
+      "description": "A user's vote on a feature request",
+      "type": "object",
+      "properties": {
+        "feature_id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "type": { "type": "string", "enum": ["up", "down"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["feature_id", "user_id", "type"]
+    }
+  },
+  "firestore": {
+    "/recipes/{recipeId}": {
+      "schema": "Recipe",
+      "description": "Collection of all recipes"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile information"
+    },
+    "/stars/{starId}": {
+      "schema": "Star",
+      "description": "User stars on recipes"
+    },
+    "/feature_requests/{featureId}": {
+      "schema": "FeatureRequest",
+      "description": "Collection of feature requests"
+    },
+    "/feature_votes/{voteId}": {
+      "schema": "FeatureVote",
+      "description": "Collection of user votes on features"
+    }
+  }
+}

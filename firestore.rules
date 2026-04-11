@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: recipes
+    // Document ID: auto-generated UUID
+    // Fields:
+    //   - title: string (required)
+    //   - ingredients: list (required)
+    //   - original_ingredients: list (optional)
+    //   - steps: list (required)
+    //   - parent_id: string (optional)
+    //   - user_id: string (required) - UID of the owner
+    //   - source_url: string (optional)
+    //   - created_at: timestamp (optional)
+    //
+    // Collection: users
+    // Document ID: userId (UID)
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string (optional)
+    //   - photoURL: string (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.user_id;
+    }
+
+    function isValidRecipe(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.ingredients is list && data.ingredients.size() < 100 &&
+             data.steps is list && data.steps.size() < 100 &&
+             data.user_id == request.auth.uid;
+    }
+
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.email is string && data.email.size() > 0;
+    }
+
+    function isValidFeatureRequest(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 2000 &&
+             data.user_id == request.auth.uid;
+    }
+
+    function isValidVote(data) {
+      return data.feature_id is string &&
+             data.user_id == request.auth.uid &&
+             data.type in ['up', 'down'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    match /recipes/{recipeId} {
+      // Anyone can read recipes (public repository)
+      allow read: if true;
+      
+      // Only authenticated users can create recipes, and they must be the owner
+      allow create: if isAuthenticated() && isValidRecipe(request.resource.data);
+      
+      // Only the owner can update or delete their recipes
+      allow update: if isDocOwner() && isValidRecipe(request.resource.data) && 
+                      request.resource.data.user_id == resource.data.user_id;
+      allow delete: if isDocOwner();
+    }
+
+    match /stars/{starId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && 
+                       request.resource.data.user_id == request.auth.uid &&
+                       starId == request.auth.uid + '_' + request.resource.data.recipe_id;
+      allow delete: if isAuthenticated() && 
+                       resource.data.user_id == request.auth.uid;
+    }
+
+    match /feature_requests/{featureId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidFeatureRequest(request.resource.data);
+      // Allow updating scores/votes via batch or server-side
+      allow update: if isAuthenticated() && 
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes', 'downvotes', 'score']));
+      allow delete: if false;
+    }
+
+    match /feature_votes/{voteId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidVote(request.resource.data) &&
+                       voteId == request.auth.uid + '_' + request.resource.data.feature_id;
+      allow update: if isAuthenticated() && isValidVote(request.resource.data) &&
+                       voteId == request.auth.uid + '_' + request.resource.data.feature_id;
+      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+    }
+  }
+}
