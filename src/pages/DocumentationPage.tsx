@@ -59,8 +59,8 @@ export function DocumentationPage() {
             </div>
             <h1 className="text-xl font-semibold tracking-tight">ReciBee<span className="text-carbon-blue-60">/docs</span></h1>
           </Link>
-          <Link to="/explore" className="text-sm font-medium text-carbon-gray-30 hover:text-white transition-colors">
-            Back to App
+          <Link to="/" className="text-sm font-medium text-carbon-gray-30 hover:text-white transition-colors">
+            Back to Home
           </Link>
         </div>
       </header>

@@ -51,7 +51,6 @@
         "user_id": { "type": "string" },
         "user_email": { "type": "string" },
         "upvotes": { "type": "number" },
-        "downvotes": { "type": "number" },
         "score": { "type": "number" },
         "created_at": { "type": "string", "format": "date-time" }
       },
@@ -64,7 +63,7 @@
       "properties": {
         "feature_id": { "type": "string" },
         "user_id": { "type": "string" },
-        "type": { "type": "string", "enum": ["up", "down"] },
+        "type": { "type": "string", "enum": ["up"] },
         "created_at": { "type": "string", "format": "date-time" }
       },
       "required": ["feature_id", "user_id", "type"]

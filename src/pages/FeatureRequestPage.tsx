@@ -1,17 +1,19 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Link } from 'react-router-dom';
 import { 
   ThumbsUp, 
-  ThumbsDown, 
   Plus, 
   MessageSquare, 
   Loader2, 
   AlertCircle,
   CheckCircle2,
-  X
+  X,
+  ChefHat,
+  Zap
 } from 'lucide-react';
 import { auth } from '../lib/firebase';
-import { FeatureRequest, FeatureVote } from '../types';
+import { FeatureRequest } from '../types';
 import { 
   getFeatureRequests, 
   createFeatureRequest, 
@@ -19,6 +21,7 @@ import {
   getUserVote 
 } from '../services/featureService';
 import { cn } from '../lib/utils';
+import { SEO } from '../components/SEO';
 
 export function FeatureRequestPage({ ensureAuth }: { ensureAuth: (action: string) => boolean }) {
   const [features, setFeatures] = useState<FeatureRequest[]>([]);
@@ -27,7 +30,7 @@ export function FeatureRequestPage({ ensureAuth }: { ensureAuth: (action: string
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userVotes, setUserVotes] = useState<Record<string, 'up' | 'down' | null>>({});
+  const [userVotes, setUserVotes] = useState<Record<string, 'up' | null>>({});
   
   // Form state
   const [title, setTitle] = useState('');
@@ -57,10 +60,10 @@ export function FeatureRequestPage({ ensureAuth }: { ensureAuth: (action: string
 
       // Load user votes if logged in
       if (user) {
-        const votes: Record<string, 'up' | 'down' | null> = { ...userVotes };
+        const votes: Record<string, 'up' | null> = { ...userVotes };
         for (const feature of result.features) {
           const vote = await getUserVote(feature.id, user.uid);
-          votes[feature.id] = vote ? vote.type : null;
+          votes[feature.id] = vote && vote.type === 'up' ? 'up' : null;
         }
         setUserVotes(votes);
       }
@@ -98,34 +101,29 @@ export function FeatureRequestPage({ ensureAuth }: { ensureAuth: (action: string
     }
   };
 
-  const handleVote = async (featureId: string, type: 'up' | 'down') => {
+  const handleVote = async (featureId: string) => {
     if (!ensureAuth('vote on features')) return;
 
     const currentVote = userVotes[featureId];
-    const newVote = currentVote === type ? null : type;
+    const newVote = currentVote === 'up' ? null : 'up';
 
     // Optimistic update
     setUserVotes(prev => ({ ...prev, [featureId]: newVote }));
     setFeatures(prev => prev.map(f => {
       if (f.id === featureId) {
         let upDiff = 0;
-        let downDiff = 0;
 
         // Remove old vote
         if (currentVote === 'up') upDiff--;
-        if (currentVote === 'down') downDiff--;
 
         // Add new vote
         if (newVote === 'up') upDiff++;
-        if (newVote === 'down') downDiff++;
 
         const newUp = f.upvotes + upDiff;
-        const newDown = f.downvotes + downDiff;
         return {
           ...f,
           upvotes: newUp,
-          downvotes: newDown,
-          score: newUp - newDown
+          score: newUp
         };
       }
       return f;
@@ -141,13 +139,33 @@ export function FeatureRequestPage({ ensureAuth }: { ensureAuth: (action: string
   };
 
   return (
-    <div className="min-h-screen bg-carbon-gray-100 pt-32 pb-20 px-6">
-      <div className="container mx-auto max-w-4xl">
+    <div className="min-h-screen bg-carbon-gray-100 text-white pb-20 font-sans">
+      <SEO 
+        title="Feature Requests" 
+        description="Help us shape the future of ReciBee. Request new features and vote on community suggestions."
+      />
+      
+      {/* Header */}
+      <header className="bg-carbon-gray-90 border-b border-carbon-gray-80 px-6 py-4 sticky top-0 z-10">
+        <div className="container mx-auto max-w-5xl flex items-center justify-between">
+          <Link to="/explore" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="bg-carbon-blue-60 p-1.5">
+              <ChefHat size={20} className="text-white" />
+            </div>
+            <h1 className="text-xl font-semibold tracking-tight">ReciBee<span className="text-carbon-blue-60">/features</span></h1>
+          </Link>
+          <Link to="/" className="text-sm font-medium text-carbon-gray-30 hover:text-white transition-colors">
+            Back to Home
+          </Link>
+        </div>
+      </header>
+
+      <main className="container mx-auto max-w-4xl px-6 pt-12">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-bold tracking-tighter text-white mb-2 uppercase">Feature Requests</h1>
-            <p className="text-carbon-gray-30 font-mono text-xs uppercase tracking-widest">
-              Help us shape the future of ReciBee
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-2">Feature Requests</h2>
+            <p className="text-carbon-gray-30 text-lg max-w-2xl">
+              Help us shape the future of ReciBee.
             </p>
           </div>
           
@@ -172,31 +190,19 @@ export function FeatureRequestPage({ ensureAuth }: { ensureAuth: (action: string
               animate={{ opacity: 1, y: 0 }}
               className="bg-carbon-gray-90 border border-carbon-gray-80 p-6 flex gap-6"
             >
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-1">
                 <button
-                  onClick={() => handleVote(feature.id, 'up')}
+                  onClick={() => handleVote(feature.id)}
                   className={cn(
-                    "p-2 transition-colors",
-                    userVotes[feature.id] === 'up' ? "text-carbon-blue-60" : "text-carbon-gray-40 hover:text-white"
+                    "p-3 transition-all rounded-full hover:bg-carbon-gray-80",
+                    userVotes[feature.id] === 'up' ? "text-carbon-blue-60 bg-carbon-blue-60/10" : "text-carbon-gray-40 hover:text-white"
                   )}
                 >
-                  <ThumbsUp size={20} />
+                  <ThumbsUp size={24} />
                 </button>
-                <span className={cn(
-                  "font-mono font-bold text-lg",
-                  feature.score > 0 ? "text-carbon-blue-60" : feature.score < 0 ? "text-red-500" : "text-white"
-                )}>
-                  {feature.score}
+                <span className="font-mono font-bold text-lg text-white">
+                  {feature.upvotes}
                 </span>
-                <button
-                  onClick={() => handleVote(feature.id, 'down')}
-                  className={cn(
-                    "p-2 transition-colors",
-                    userVotes[feature.id] === 'down' ? "text-red-500" : "text-carbon-gray-40 hover:text-white"
-                  )}
-                >
-                  <ThumbsDown size={20} />
-                </button>
               </div>
 
               <div className="flex-1">
@@ -238,7 +244,7 @@ export function FeatureRequestPage({ ensureAuth }: { ensureAuth: (action: string
             </button>
           )}
         </div>
-      </div>
+      </main>
 
       {/* Request Modal */}
       <AnimatePresence>

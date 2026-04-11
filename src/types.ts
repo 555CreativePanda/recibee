@@ -35,7 +35,6 @@ export interface FeatureRequest {
   user_id: string;
   user_email?: string;
   upvotes: number;
-  downvotes: number;
   score: number;
   created_at: string;
 }
@@ -43,6 +42,6 @@ export interface FeatureRequest {
 export interface FeatureVote {
   feature_id: string;
   user_id: string;
-  type: 'up' | 'down';
+  type: 'up';
   created_at: string;
 }

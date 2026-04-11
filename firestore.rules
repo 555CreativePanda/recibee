@@ -66,8 +66,8 @@ service cloud.firestore {
     function isValidUser(data) {
       return data.uid == request.auth.uid &&
              isValidEmail(data.email) &&
-             (!('displayName' in data) || isValidString(data.displayName, 100)) &&
-             (!('photoURL' in data) || isValidUrl(data.photoURL));
+             (!('displayName' in data) || data.displayName == null || isValidString(data.displayName, 100)) &&
+             (!('photoURL' in data) || data.photoURL == null || isValidUrl(data.photoURL));
     }
 
     function isValidFeatureRequest(data) {
@@ -80,7 +80,7 @@ service cloud.firestore {
     function isValidVote(data) {
       return isValidString(data.feature_id, 100) &&
              data.user_id == request.auth.uid &&
-             data.type in ['up', 'down'];
+             data.type == 'up';
     }
 
     // ===============================================================
@@ -91,9 +91,10 @@ service cloud.firestore {
       // PII Protection: Only the owner can read their own user document
       allow read: if isOwner(userId);
       allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      allow update: if isOwner(userId) && isValidUser(request.resource.data) &&
-                       request.resource.data.uid == resource.data.uid &&
-                       request.resource.data.email == resource.data.email;
+      allow update: if isOwner(userId) && 
+                       isValidUser(request.resource.data) &&
+                       (!('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid) &&
+                       (!('email' in request.resource.data) || request.resource.data.email == resource.data.email);
     }
 
     match /recipes/{recipeId} {
@@ -118,21 +119,21 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAuthenticated() && isValidFeatureRequest(request.resource.data);
       allow update: if isAuthenticated() && 
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes', 'downvotes', 'score']) &&
-                       // Ensure the vote count change is consistent with a vote document change
-                       // This is a simplified version of the consistency check
-                       math.abs(request.resource.data.upvotes - resource.data.upvotes) <= 1 &&
-                       math.abs(request.resource.data.downvotes - resource.data.downvotes) <= 1;
+                       request.resource.data.diff(resource.data).affectedKeys().hasAny(['upvotes', 'score']) &&
+                       request.resource.data.score == request.resource.data.upvotes;
       allow delete: if false;
     }
 
     match /feature_votes/{voteId} {
       allow read: if true;
-      allow create: if isAuthenticated() && isValidVote(request.resource.data) &&
+      allow create: if isAuthenticated() && 
+                       request.resource.data.user_id == request.auth.uid &&
                        voteId == request.auth.uid + '_' + request.resource.data.feature_id;
-      allow update: if isAuthenticated() && isValidVote(request.resource.data) &&
+      allow update: if isAuthenticated() && 
+                       request.resource.data.user_id == request.auth.uid &&
                        voteId == request.auth.uid + '_' + request.resource.data.feature_id;
-      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow delete: if isAuthenticated() && 
+                       (resource.data.user_id == request.auth.uid || voteId.startsWith(request.auth.uid + '_'));
     }
   }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { db, auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, User } from './lib/firebase';
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, orderBy, onSnapshot, setDoc, serverTimestamp, limit } from 'firebase/firestore';
+import { db, auth, googleProvider, signOut, onAuthStateChanged, User } from './lib/firebase';
+import { collection, query, where, getDocs, getDoc, addDoc, updateDoc, doc, orderBy, onSnapshot, setDoc, serverTimestamp, limit } from 'firebase/firestore';
 import { Recipe } from './types';
 import { RecipeEditor } from './components/RecipeEditor';
 import { AuthModal } from './components/AuthModal';
@@ -56,16 +56,35 @@ function AppContent() {
   }, [isImportModalOpen]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       setIsAuthReady(true);
       if (currentUser) {
-        setDoc(doc(db, 'users', currentUser.uid), {
-          uid: currentUser.uid,
-          email: currentUser.email,
-          displayName: currentUser.displayName,
-          photoURL: currentUser.photoURL
-        }, { merge: true }).catch(err => console.error('Error syncing user:', err));
+        try {
+          // Only sync if data has changed or document doesn't exist
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          const userData = userDoc.data();
+          
+          const newData = {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName,
+            photoURL: currentUser.photoURL
+          };
+
+          const hasChanged = !userDoc.exists() || 
+              (userData && (
+                userData.displayName !== newData.displayName || 
+                userData.photoURL !== newData.photoURL ||
+                userData.email !== newData.email
+              ));
+
+          if (hasChanged) {
+            await setDoc(doc(db, 'users', currentUser.uid), newData, { merge: true });
+          }
+        } catch (err) {
+          console.error('Error syncing user:', err);
+        }
       }
     });
     return () => unsubscribe();
@@ -329,7 +348,7 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      {location.pathname !== '/' && location.pathname !== '/docs' && location.pathname !== '/api-docs' && location.pathname !== '/status' && (
+      {location.pathname !== '/' && location.pathname !== '/docs' && location.pathname !== '/api-docs' && location.pathname !== '/status' && location.pathname !== '/features' && (
         <header className="bg-carbon-gray-90 border-b border-carbon-gray-80 px-4 py-3 lg:px-6 lg:py-4 sticky top-0 z-10">
           <div className="container mx-auto max-w-5xl flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center justify-between w-full lg:w-auto">

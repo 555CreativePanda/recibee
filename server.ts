@@ -10,18 +10,10 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Security headers
+  // Security headers - temporarily disabled to debug Auth issues
   app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        "img-src": ["'self'", "data:", "https:", "http:"],
-        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Needed for Vite/React
-        "connect-src": ["'self'", "https:", "http:", "wss:", "ws:"],
-        "frame-ancestors": ["'self'", "https://*.google.com", "https://*.googleusercontent.com", "https://*.run.app"],
-      },
-    },
-    frameguard: false, // Allow embedding in iframes (AI Studio)
+    contentSecurityPolicy: false,
+    frameguard: false,
     crossOriginEmbedderPolicy: false,
   }));
 
