@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { db, auth, googleProvider, signOut, onAuthStateChanged, User } from './lib/firebase';
-import { collection, query, where, getDocs, getDoc, addDoc, updateDoc, doc, orderBy, onSnapshot, setDoc, serverTimestamp, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc, addDoc, updateDoc, doc, orderBy, onSnapshot, setDoc, serverTimestamp, limit, deleteField } from 'firebase/firestore';
 import { Recipe } from './types';
 import { GoogleGenAI } from '@google/genai';
 import { RecipeEditor } from './components/RecipeEditor';
@@ -80,7 +80,8 @@ function AppContent() {
           const publicData = {
             uid: currentUser.uid,
             displayName: currentUser.displayName,
-            photoURL: currentUser.photoURL
+            photoURL: currentUser.photoURL,
+            updated_at: serverTimestamp()
           };
           const privateData = {
             email: currentUser.email
@@ -93,7 +94,10 @@ function AppContent() {
               ));
 
           if (hasChanged) {
-            await setDoc(doc(db, 'users', currentUser.uid), publicData, { merge: true });
+            await setDoc(doc(db, 'users', currentUser.uid), {
+              ...publicData,
+              email: deleteField()
+            }, { merge: true });
           }
 
           // Always sync email to private subcollection

@@ -165,7 +165,7 @@ export function UserProfileModal({ uid, currentUserId, mode, onClose, onProfileU
                   )}
                 </div>
 
-                {profile?.email && (
+                {profile?.email && currentUserId === uid && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] uppercase tracking-widest text-carbon-gray-30 font-bold flex items-center gap-2">

@@ -10,7 +10,7 @@ interface RecipeEditorProps {
 }
 
 export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
-  const [title, setTitle] = useState(recipe.title);
+  const [title, setTitle] = useState(recipe.title || '');
   const [prepTime, setPrepTime] = useState(recipe.prep_time || '');
   const [cookTime, setCookTime] = useState(recipe.cook_time || '');
   const [servings, setServings] = useState(recipe.servings || '');
@@ -26,6 +26,9 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     recipe.ingredients.map(ing => ({
       ...ing,
+      item: ing.item || '',
+      amount: ing.amount || '',
+      unit: ing.unit || '',
       id: Math.random().toString(36).slice(2, 11)
     }))
   );
@@ -33,7 +36,7 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
   const [steps, setSteps] = useState<{ id: string, text: string }[]>(
     recipe.steps.map(step => ({
       id: Math.random().toString(36).slice(2, 11),
-      text: step
+      text: step || ''
     }))
   );
   const [errors, setErrors] = useState<{ title: boolean, ingredients: number[], steps: number[] }>({ 

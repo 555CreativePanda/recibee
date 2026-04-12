@@ -73,9 +73,10 @@ service cloud.firestore {
 
     function isValidUser(data) {
       return data.uid == request.auth.uid &&
-             (!('displayName' in data) || data.displayName == null || isValidString(data.displayName, 100)) &&
-             (!('photoURL' in data) || data.photoURL == null || isValidUrl(data.photoURL)) &&
-             (!('bio' in data) || data.bio == null || isValidString(data.bio, 500));
+             (!('displayName' in data) || data.displayName == null || data.displayName == "" || isValidString(data.displayName, 100)) &&
+             (!('photoURL' in data) || data.photoURL == null || data.photoURL == "" || isValidUrl(data.photoURL)) &&
+             (!('bio' in data) || data.bio == null || isValidString(data.bio, 500)) &&
+             (!('updated_at' in data) || data.updated_at == null || data.updated_at is timestamp);
     }
 
     function isValidUserPrivate(data) {

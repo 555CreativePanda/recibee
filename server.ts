@@ -189,7 +189,15 @@ async function startServer() {
     'dash', 'dashes',
     'clove', 'cloves',
     'can', 'cans',
+    'packet', 'packets',
     'package', 'pkg',
+    'container', 'containers',
+    'jar', 'jars',
+    'bottle', 'bottles',
+    'bag', 'bags',
+    'box', 'boxes',
+    'tub', 'tubs',
+    'envelope', 'envelopes',
     'slice', 'slices',
     'handful', 'handfuls',
     'sprig', 'sprigs',
@@ -200,19 +208,25 @@ async function startServer() {
     'inch', 'inches',
     'piece', 'pieces',
     'strip', 'strips',
-    'floz', 'fluidounce', 'fluidounces'
+    'floz', 'fluidounce', 'fluidounces',
+    'pint', 'pints',
+    'quart', 'quarts',
+    'gallon', 'gallons'
   ];
 
   const parseIngredient = (ing: string) => {
     // Clean up the string and normalize spaces
     let cleanIng = decodeHtml(ing).trim().replace(/\s+/g, ' ');
     
+    // Strip footnotes like ¹, ², ³
+    cleanIng = cleanIng.replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰]/g, '');
+    
     let amount = '';
     let remaining = cleanIng;
     let unit = '';
 
     // 1. Check for amount at the beginning
-    const amountRegex = /^(\d+\s+to\s+\d+|\d+[\s-]+\d+|\d+\s+[\d\/]+|\d+[\u00BC-\u00BE\u2150-\u215E]|[\d\/]+|[\u00BC-\u00BE\u2150-\u215E]|\d*\.\d+|\d+|[Aa]\s+few|[Ss]ome|[Tt]o\s+taste)/;
+    const amountRegex = /^(\d+\s+to\s+\d+|\d+[\s-–—]+\d+|\d+\s+[\d\/]+|\d+[\u00BC-\u00BE\u2150-\u215E]|[\d\/]+|[\u00BC-\u00BE\u2150-\u215E]|[\u00BC-\u00BE\u2150-\u215E][\s-–—]+[\u00BC-\u00BE\u2150-\u215E]|\d+[\s-–—]+[\u00BC-\u00BE\u2150-\u215E]|\d*\.\d+|\d+|[Aa]\s+few|[Ss]ome|[Tt]o\s+taste)/;
     const amountMatch = cleanIng.match(amountRegex);
     
     if (amountMatch) {
@@ -251,10 +265,10 @@ async function startServer() {
       }
     }
 
-    const extraAmountRegex = /^([\d\/]+|[\u00BC-\u00BE\u2150-\u215E])/;
+    const extraAmountRegex = /^([\s-–—]*[\d\/]+|[\s-–—]*[\u00BC-\u00BE\u2150-\u215E])/;
     const extraMatch = remaining.match(extraAmountRegex);
-    if (extraMatch && amount && !isNaN(parseInt(amount[0]))) {
-      amount = (amount + ' ' + extraMatch[0]).trim();
+    if (extraMatch && amount && (!isNaN(parseInt(amount[0])) || /[\u00BC-\u00BE\u2150-\u215E]/.test(amount[0]))) {
+      amount = (amount + extraMatch[0]).trim();
       remaining = remaining.slice(extraMatch[0].length).trim();
     }
 
@@ -298,6 +312,12 @@ async function startServer() {
     }
 
     let finalItem = (item || remaining || 'Unknown Item').trim();
+    
+    // Clean up trailing parenthetical info if it's just a redundant amount
+    finalItem = finalItem.replace(/\s*\(\s*\d+.*\)\s*$/, '').trim();
+    // Clean up double parentheses noise
+    finalItem = finalItem.replace(/\s*\(\s*\(\s*(.*?)\s*\)\s*\)\s*$/, ' ($1)').trim();
+
     const weirdParenRegex = /^(.+?)\s*\(\s*,\s*(.+)\)$/;
     const parenMatch = finalItem.match(weirdParenRegex);
     if (parenMatch) {
@@ -387,7 +407,20 @@ async function startServer() {
         ingredients.push({ item: groupName, amount: '', unit: '', isHeader: true });
       }
       $(group).find('.wprm-recipe-ingredient').each((_, ing) => {
-        ingredients.push(parseIngredient($(ing).text()));
+        const amount = $(ing).find('.wprm-recipe-ingredient-amount').text().trim();
+        const unit = $(ing).find('.wprm-recipe-ingredient-unit').text().trim();
+        const name = $(ing).find('.wprm-recipe-ingredient-name').text().trim();
+        const notes = $(ing).find('.wprm-recipe-ingredient-notes').text().trim();
+        
+        if (name || amount || unit) {
+          ingredients.push({
+            item: name + (notes ? ` ${notes}` : ''),
+            amount: amount,
+            unit: unit
+          });
+        } else {
+          ingredients.push(parseIngredient($(ing).text()));
+        }
       });
     });
 
