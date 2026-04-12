@@ -20,6 +20,7 @@ interface HomePageProps {
   setEditingRecipe: (recipe: Recipe) => void;
   ensureAuth: (action: string) => boolean;
   user: any;
+  onUserClick?: (uid: string) => void;
 }
 
 export function HomePage({
@@ -35,7 +36,8 @@ export function HomePage({
   handleFork,
   setEditingRecipe,
   ensureAuth,
-  user
+  user,
+  onUserClick
 }: HomePageProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -192,6 +194,7 @@ export function HomePage({
                 isOwner={user ? recipe.user_id === user.uid : false}
                 isStarred={starredRecipeIds.has(recipe.id)}
                 user={user}
+                onUserClick={onUserClick}
               />
             ))}
           </div>

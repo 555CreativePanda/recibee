@@ -17,9 +17,10 @@ interface RecipePageProps {
   ensureAuth: (action: string) => boolean;
   setNotification: (notif: { title: string, message: string } | null) => void;
   starredRecipeIds: Set<string>;
+  onUserClick?: (uid: string) => void;
 }
 
-export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds }: RecipePageProps) {
+export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds, onUserClick }: RecipePageProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -218,6 +219,7 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
               isStarred={starredRecipeIds.has(recipe.id)}
               user={user}
               expandedDefault={true}
+              onUserClick={onUserClick}
             />
 
             <div className="space-y-6">

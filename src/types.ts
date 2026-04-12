@@ -6,6 +6,15 @@ export interface Ingredient {
   isHeader?: boolean;
 }
 
+export interface UserProfile {
+  uid: string;
+  email?: string;
+  displayName: string | null;
+  photoURL: string | null;
+  bio?: string | null;
+  updated_at?: string;
+}
+
 export interface Recipe {
   id: string;
   title: string;

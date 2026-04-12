@@ -16,6 +16,7 @@ interface RecipeCardProps {
   isStarred: boolean;
   user: any;
   expandedDefault?: boolean;
+  onUserClick?: (uid: string) => void;
 }
 
 export const RecipeCard: React.FC<RecipeCardProps> = ({ 
@@ -26,7 +27,8 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   isOwner,
   isStarred,
   user,
-  expandedDefault = false
+  expandedDefault = false,
+  onUserClick
 }) => {
   const [isExpanded, setIsExpanded] = useState(expandedDefault);
   const [parentRecipe, setParentRecipe] = useState<Recipe | null>(null);
@@ -277,7 +279,12 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
           {/* Line 2: Identity & Date */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-4">
             <div className="flex items-center gap-1.5 text-xs md:text-sm font-mono min-w-0">
-              <span className="text-carbon-blue-60 hover:underline cursor-pointer shrink-0">{userHandle}</span>
+              <span 
+                onClick={() => onUserClick?.(recipe.user_id)}
+                className="text-carbon-blue-60 hover:underline cursor-pointer shrink-0"
+              >
+                {userHandle}
+              </span>
               <span className="text-carbon-gray-80 shrink-0">/</span>
               <Link 
                 to={`/recipe/${recipe.id}`}

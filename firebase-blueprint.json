@@ -19,15 +19,25 @@
     },
     "User": {
       "title": "User",
-      "description": "A user profile",
+      "description": "A public user profile",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
-        "email": { "type": "string" },
         "displayName": { "type": "string" },
-        "photoURL": { "type": "string" }
+        "photoURL": { "type": "string" },
+        "bio": { "type": "string" },
+        "updated_at": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email"]
+      "required": ["uid"]
+    },
+    "UserPrivate": {
+      "title": "UserPrivate",
+      "description": "Private user data",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" }
+      },
+      "required": ["email"]
     },
     "Star": {
       "title": "Star",
@@ -76,7 +86,11 @@
     },
     "/users/{userId}": {
       "schema": "User",
-      "description": "User profile information"
+      "description": "Public user profile information"
+    },
+    "/users/{userId}/private/data": {
+      "schema": "UserPrivate",
+      "description": "Private user data"
     },
     "/stars/{starId}": {
       "schema": "Star",

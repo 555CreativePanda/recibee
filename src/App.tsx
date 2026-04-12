@@ -18,7 +18,10 @@ import { StatusPage } from './pages/StatusPage';
 import { FeatureRequestPage } from './pages/FeatureRequestPage';
 import { ScrollToTop } from './components/ScrollToTop';
 import { Footer } from './components/Footer';
+import { UserProfileModal } from './components/UserProfileModal';
 import { saveRecipe, forkRecipe } from './services/recipeService';
+import { getUserProfile } from './services/userService';
+import { UserProfile } from './types';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -31,6 +34,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'favorites'>('all');
   const [starredRecipeIds, setStarredRecipeIds] = useState<Set<string>>(new Set());
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   
   // Notification Modal State
@@ -39,6 +43,9 @@ function AppContent() {
   // Auth Modal State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authAction, setAuthAction] = useState('');
+
+  // Profile Modal State
+  const [profileModal, setProfileModal] = useState<{ uid: string, mode: 'view' | 'edit' } | null>(null);
   
   // Import Modal State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -62,30 +69,48 @@ function AppContent() {
       setIsAuthReady(true);
       if (currentUser) {
         try {
+          // Fetch full profile
+          const profile = await getUserProfile(currentUser.uid);
+          setUserProfile(profile);
+
           // Only sync if data has changed or document doesn't exist
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           const userData = userDoc.data();
           
-          const newData = {
+          const publicData = {
             uid: currentUser.uid,
-            email: currentUser.email,
             displayName: currentUser.displayName,
             photoURL: currentUser.photoURL
+          };
+          const privateData = {
+            email: currentUser.email
           };
 
           const hasChanged = !userDoc.exists() || 
               (userData && (
-                userData.displayName !== newData.displayName || 
-                userData.photoURL !== newData.photoURL ||
-                userData.email !== newData.email
+                userData.displayName !== publicData.displayName || 
+                userData.photoURL !== publicData.photoURL
               ));
 
           if (hasChanged) {
-            await setDoc(doc(db, 'users', currentUser.uid), newData, { merge: true });
+            await setDoc(doc(db, 'users', currentUser.uid), publicData, { merge: true });
+          }
+
+          // Always sync email to private subcollection
+          if (currentUser.email) {
+            await setDoc(doc(db, 'users', currentUser.uid, 'private', 'data'), privateData, { merge: true });
+          }
+
+          if (hasChanged) {
+            // Refresh local profile after sync
+            const updatedProfile = await getUserProfile(currentUser.uid);
+            setUserProfile(updatedProfile);
           }
         } catch (err) {
           console.error('Error syncing user:', err);
         }
+      } else {
+        setUserProfile(null);
       }
     });
     return () => unsubscribe();
@@ -388,6 +413,18 @@ function AppContent() {
     }
   };
 
+  const handleUserClick = (uid: string) => {
+    setProfileModal({ uid, mode: 'view' });
+  };
+
+  const handleEditOwnProfile = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    if (user) {
+      setProfileModal({ uid: user.uid, mode: 'edit' });
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -438,13 +475,25 @@ function AppContent() {
                 <div className="w-[1px] h-6 bg-carbon-gray-80 mx-1" />
                 {user ? (
                   <div className="flex items-center gap-2">
-                    {user.photoURL ? (
-                      <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full border border-carbon-gray-80" referrerPolicy="no-referrer" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-carbon-gray-80 flex items-center justify-center">
-                        <UserIcon size={14} className="text-carbon-gray-30" />
-                      </div>
-                    )}
+                    <button
+                      onClick={(e) => handleEditOwnProfile(e)}
+                      className="flex items-center gap-2 group cursor-pointer"
+                      title="Your Profile"
+                      type="button"
+                    >
+                      {userProfile?.photoURL || user.photoURL ? (
+                        <img 
+                          src={userProfile?.photoURL || user.photoURL!} 
+                          alt="" 
+                          className="w-7 h-7 rounded-full border border-carbon-gray-80 group-hover:border-carbon-blue-60 transition-colors" 
+                          referrerPolicy="no-referrer" 
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-carbon-gray-80 flex items-center justify-center group-hover:bg-carbon-gray-70 transition-colors">
+                          <UserIcon size={14} className="text-carbon-gray-30" />
+                        </div>
+                      )}
+                    </button>
                     <button
                       onClick={handleLogout}
                       className="p-2 text-carbon-gray-30 hover:text-white transition-colors"
@@ -481,16 +530,27 @@ function AppContent() {
             <div className="hidden lg:flex items-center gap-3">
               {user ? (
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    {user.photoURL ? (
-                      <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full border border-carbon-gray-80" referrerPolicy="no-referrer" />
+                  <button
+                    onClick={(e) => handleEditOwnProfile(e)}
+                    className="flex items-center gap-2 group cursor-pointer"
+                    type="button"
+                  >
+                    {userProfile?.photoURL || user.photoURL ? (
+                      <img 
+                        src={userProfile?.photoURL || user.photoURL!} 
+                        alt="" 
+                        className="w-8 h-8 rounded-full border border-carbon-gray-80 group-hover:border-carbon-blue-60 transition-colors" 
+                        referrerPolicy="no-referrer" 
+                      />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-carbon-gray-80 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-carbon-gray-80 flex items-center justify-center group-hover:bg-carbon-gray-70 transition-colors">
                         <UserIcon size={16} className="text-carbon-gray-30" />
                       </div>
                     )}
-                    <span className="text-sm font-medium hidden xl:inline">{user.displayName || user.email}</span>
-                  </div>
+                    <span className="text-sm font-medium hidden xl:inline text-carbon-gray-30 group-hover:text-white transition-colors">
+                      {userProfile?.displayName || user.displayName || user.email}
+                    </span>
+                  </button>
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-2 border border-carbon-gray-80 hover:bg-carbon-gray-80 text-white px-4 py-2 text-sm font-medium transition-colors"
@@ -680,6 +740,7 @@ function AppContent() {
                     setEditingRecipe={setEditingRecipe}
                     ensureAuth={ensureAuth}
                     user={user}
+                    onUserClick={handleUserClick}
                   />
                 )
               } />
@@ -689,6 +750,7 @@ function AppContent() {
                   ensureAuth={ensureAuth} 
                   setNotification={setNotification}
                   starredRecipeIds={starredRecipeIds}
+                  onUserClick={handleUserClick}
                 />
               } />
               <Route path="/docs" element={<DocumentationPage />} />
@@ -699,6 +761,22 @@ function AppContent() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      <AnimatePresence>
+        {profileModal && (
+          <UserProfileModal
+            uid={profileModal.uid}
+            currentUserId={user?.uid || null}
+            mode={profileModal.mode}
+            onClose={() => setProfileModal(null)}
+            onProfileUpdate={(updated) => {
+              if (user && updated.uid === user.uid) {
+                setUserProfile(updated);
+              }
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <Footer />
     </div>
