@@ -9,11 +9,7 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(express.json());
 
-// Serve favicon explicitly as a fallback
-app.get('/favicon.svg', (req, res) => {
-  res.sendFile(path.join(process.cwd(), 'public', 'favicon.svg'));
-});
-
+// Serve robots.txt explicitly as a fallback
 app.get('/robots.txt', (req, res) => {
   res.sendFile(path.join(process.cwd(), 'public', 'robots.txt'));
 });
