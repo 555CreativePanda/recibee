@@ -638,19 +638,22 @@ export async function createServer() {
 }
 
 // Only start the server if this file is run directly and not on Vercel
-const isVercel = process.env.VERCEL === '1' || process.env.NOW_REGION;
-const isMain = process.argv[1] && (
-  import.meta.url.includes(path.basename(process.argv[1])) ||
-  process.argv[1].endsWith('server.ts') ||
-  process.argv[1].endsWith('server.js')
-);
+const isVercel = process.env.VERCEL === '1' || !!process.env.NOW_REGION;
 
-if (isMain && !isVercel) {
-  createServer().then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+if (!isVercel) {
+  const isMain = process.argv[1] && (
+    import.meta.url.includes(path.basename(process.argv[1])) ||
+    process.argv[1].endsWith('server.ts') ||
+    process.argv[1].endsWith('server.js')
+  );
+
+  if (isMain) {
+    createServer().then(() => {
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+      });
     });
-  });
+  }
 }
 
 export default app;
