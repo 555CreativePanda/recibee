@@ -27,8 +27,8 @@ export function SEO({
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-      <link rel="shortcut icon" href="/favicon.svg" />
-      <link rel="apple-touch-icon" href="/favicon.svg" />
+      <link rel="alternate icon" type="image/png" href="/favicon.png" />
+      <link rel="apple-touch-icon" href="/favicon.png" />
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={ogType} />
