@@ -1,6 +1,6 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|favicon\\.svg|robots\\.txt|metadata\\.json|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg).*)", "destination": "/index.html" }
   ]
 }
