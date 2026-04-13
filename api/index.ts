@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 
@@ -7,6 +8,15 @@ const app = express();
 // Trust proxy for Vercel
 app.set('trust proxy', 1);
 app.use(express.json());
+
+// Serve favicon explicitly as a fallback
+app.get('/favicon.svg', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'favicon.svg'));
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'robots.txt'));
+});
 
 // Health check - Absolute simplest possible
 app.get('/api/health', (req, res) => {

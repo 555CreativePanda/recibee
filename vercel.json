@@ -1,6 +1,8 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/((?!api/|.*\\..*).*)", "destination": "/index.html" }
+    { "source": "/favicon.svg", "destination": "/favicon.svg" },
+    { "source": "/robots.txt", "destination": "/robots.txt" },
+    { "source": "/((?!api/|.*\\.[^/]+$).*)", "destination": "/index.html" }
   ]
 }
