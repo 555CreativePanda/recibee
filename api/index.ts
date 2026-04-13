@@ -1,6 +1,11 @@
 import app, { createServer } from '../server';
 
+let isInitialized = false;
+
 export default async (req: any, res: any) => {
-  await createServer();
+  if (!isInitialized) {
+    await createServer();
+    isInitialized = true;
+  }
   return app(req, res);
 };

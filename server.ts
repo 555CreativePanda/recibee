@@ -123,7 +123,7 @@ export async function createServer() {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         },
-        timeout: 15000,
+        timeout: 3000,
         maxRedirects: 5,
         validateStatus: (status) => status < 400 // Only resolve if status is < 400
       });
@@ -614,9 +614,11 @@ export async function createServer() {
   return app;
 }
 
-// Only start the server if this file is run directly
-const isMain = import.meta.url.endsWith(path.basename(process.argv[1]));
-if (isMain || process.env.NODE_ENV === 'production') {
+// Only start the server if this file is run directly and not on Vercel
+const isMain = import.meta.url.endsWith(path.basename(process.argv[1] || ''));
+const isVercel = process.env.VERCEL === '1';
+
+if (isMain && !isVercel) {
   createServer().then(() => {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${PORT}`);
