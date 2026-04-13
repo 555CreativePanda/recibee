@@ -105,17 +105,27 @@ export async function createServer() {
       return res.status(400).json({ error: 'Invalid URL format. Please provide a valid web address.' });
     }
 
-    const fetchWithRetry = async (urlToFetch: string, useProxy = false): Promise<any> => {
-      const finalUrl = useProxy ? `https://api.allorigins.win/raw?url=${encodeURIComponent(urlToFetch)}` : urlToFetch;
+    const fetchWithRetry = async (urlToFetch: string, useProxy = false, proxyIndex = 0): Promise<any> => {
+      const proxies = [
+        (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+        (u: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
+      ];
+
+      const finalUrl = useProxy ? proxies[proxyIndex](urlToFetch) : urlToFetch;
+      console.log(`Fetching: ${finalUrl} (Proxy: ${useProxy}, Index: ${proxyIndex})`);
+      
       return axios.get(finalUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
           'Referer': 'https://www.google.com/',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         },
-        timeout: 20000,
-        maxRedirects: 5
+        timeout: 15000,
+        maxRedirects: 5,
+        validateStatus: (status) => status < 400 // Only resolve if status is < 400
       });
     };
 
@@ -124,13 +134,26 @@ export async function createServer() {
       try {
         response = await fetchWithRetry(url);
       } catch (error: any) {
-        if (error.response?.status === 403) {
-          console.log('Direct access blocked (403), trying proxy fallback...');
-          response = await fetchWithRetry(url, true);
-        } else {
-          throw error;
+        console.log(`Direct fetch failed: ${error.message}`);
+        try {
+          console.log('Trying first proxy fallback (allorigins)...');
+          response = await fetchWithRetry(url, true, 0);
+        } catch (proxyError1: any) {
+          console.log(`First proxy failed: ${proxyError1.message}`);
+          try {
+            console.log('Trying second proxy fallback (codetabs)...');
+            response = await fetchWithRetry(url, true, 1);
+          } catch (proxyError2: any) {
+            console.log(`Second proxy failed: ${proxyError2.message}`);
+            throw new Error(`All fetch attempts failed. The website might be blocking automated access. Error: ${proxyError2.message}`);
+          }
         }
       }
+      
+      if (!response || !response.data) {
+        throw new Error('Empty response from server');
+      }
+
       const $ = cheerio.load(response.data);
       const jsonLdScripts = $('script[type="application/ld+json"]');
       
@@ -578,6 +601,15 @@ export async function createServer() {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  // Global error handler
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('Unhandled Error:', err);
+    res.status(err.status || 500).json({
+      error: err.message || 'An unexpected server error occurred',
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+  });
 
   return app;
 }
