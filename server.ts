@@ -12,13 +12,14 @@ const PORT = 3000;
 // Trust proxy is required for rate limiting behind Cloud Run/GFE/Vercel
 app.set('trust proxy', 1);
 
-// Health check route
+app.use(express.json());
+
+// Health check route - defined BEFORE rate limiting and other complex middleware
 app.get('/api/health', (req, res) => {
-  res.json({ 
+  res.status(200).json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV,
-    vercel: process.env.VERCEL === '1'
+    vercel: !!(process.env.VERCEL || process.env.NOW_REGION)
   });
 });
 
@@ -29,8 +30,6 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-app.use(express.json());
-
 // Rate limiting for API routes
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -38,7 +37,7 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests from this IP, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'development',
+  skip: () => !!(process.env.VERCEL || process.env.NOW_REGION) || process.env.NODE_ENV === 'development',
 });
 
 // Helper to decode HTML entities and clean text
@@ -602,18 +601,15 @@ app.get('/sitemap.xml', (req, res) => {
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled Error:', err);
   res.status(err.status || 500).json({
-    error: err.message || 'An unexpected server error occurred',
-    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    error: err.message || 'An unexpected server error occurred'
   });
 });
 
-let isConfigured = false;
+// Vite/Static serving logic
+const isVercel = !!(process.env.VERCEL || process.env.NOW_REGION);
 
-export async function createServer() {
-  if (isConfigured) return app;
-
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production' && process.env.VERCEL !== '1') {
+if (!isVercel) {
+  if (process.env.NODE_ENV !== 'production') {
     try {
       const { createServer: createViteServer } = await import('vite');
       const vite = await createViteServer({
@@ -624,8 +620,7 @@ export async function createServer() {
     } catch (e) {
       console.error('Failed to load Vite:', e);
     }
-  } else if (process.env.VERCEL !== '1') {
-    // Only serve static files if NOT on Vercel (Vercel handles this via vercel.json/edge)
+  } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
@@ -633,27 +628,10 @@ export async function createServer() {
     });
   }
 
-  isConfigured = true;
-  return app;
-}
-
-// Only start the server if this file is run directly and not on Vercel
-const isVercel = process.env.VERCEL === '1' || !!process.env.NOW_REGION;
-
-if (!isVercel) {
-  const isMain = process.argv[1] && (
-    import.meta.url.includes(path.basename(process.argv[1])) ||
-    process.argv[1].endsWith('server.ts') ||
-    process.argv[1].endsWith('server.js')
-  );
-
-  if (isMain) {
-    createServer().then(() => {
-      app.listen(PORT, '0.0.0.0', () => {
-        console.log(`Server running on http://localhost:${PORT}`);
-      });
-    });
-  }
+  // Start server locally
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 }
 
 export default app;

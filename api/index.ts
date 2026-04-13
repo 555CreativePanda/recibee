@@ -1,6 +1,3 @@
-import app, { createServer } from '../server';
+import app from '../server';
 
-export default async (req: any, res: any) => {
-  await createServer();
-  return app(req, res);
-};
+export default app;
