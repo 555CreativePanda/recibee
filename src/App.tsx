@@ -6,7 +6,7 @@ import { Recipe } from './types';
 import { GoogleGenAI } from '@google/genai';
 import { RecipeEditor } from './components/RecipeEditor';
 import { AuthModal } from './components/AuthModal';
-import { cn } from './lib/utils';
+import { cn, safeStringify } from './lib/utils';
 import { Plus, ChefHat, Search, Filter, GitBranch, Download, X, Loader2, LogIn, LogOut, User as UserIcon, Database } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HomePage } from './pages/HomePage';
@@ -135,7 +135,7 @@ function AppContent() {
     }, (error) => {
       console.error('Error fetching starred recipes:', error);
       if (error.code === 'permission-denied') {
-        console.error('Detailed Star Fetch Error:', JSON.stringify({
+        console.error('Detailed Star Fetch Error:', safeStringify({
           error: error.message,
           operationType: 'list',
           path: 'stars',
@@ -143,7 +143,7 @@ function AppContent() {
             userId: user.uid,
             email: user.email,
           }
-        }, null, 2));
+        }));
       }
     });
 

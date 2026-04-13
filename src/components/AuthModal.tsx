@@ -10,7 +10,7 @@ import {
   sendPasswordResetEmail,
   updateProfile
 } from '../lib/firebase';
-import { cn } from '../lib/utils';
+import { cn, safeStringify } from '../lib/utils';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -167,7 +167,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                 {showDebug && (
                   <div className="mt-3 p-3 bg-black/40 rounded border border-white/5 font-mono text-[9px] text-carbon-gray-30 overflow-x-auto">
                     <p className="text-white mb-1">RAW ERROR:</p>
-                    <pre className="whitespace-pre-wrap">{JSON.stringify(rawError, null, 2)}</pre>
+                    <pre className="whitespace-pre-wrap">{safeStringify(rawError)}</pre>
                     <p className="text-white mt-3 mb-1">CONFIG STATE:</p>
                     <p>Auth Ready: {auth ? 'YES' : 'NO'}</p>
                     <p>Provider: {googleProvider ? 'INITIALIZED' : 'MISSING'}</p>

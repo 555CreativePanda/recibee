@@ -7,10 +7,10 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import 'dotenv/config';
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+const PORT = 3000;
 
+export async function createServer() {
   // Trust proxy is required for rate limiting behind Cloud Run/GFE
   app.set('trust proxy', 1);
 
@@ -579,9 +579,17 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  return app;
+}
+
+// Only start the server if this file is run directly
+const isMain = import.meta.url.endsWith(path.basename(process.argv[1]));
+if (isMain || process.env.NODE_ENV === 'production') {
+  createServer().then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
   });
 }
 
-startServer();
+export default app;

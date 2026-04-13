@@ -1,6 +1,6 @@
 import { GitFork, Edit2, ChevronRight, ChevronDown, Star, Globe, Lock, ExternalLink, Trash2, AlertTriangle, Loader2, X } from 'lucide-react';
 import { Recipe, Ingredient } from '../types';
-import { cn } from '../lib/utils';
+import { cn, safeStringify } from '../lib/utils';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../lib/firebase';
@@ -123,7 +123,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
             email: user.email,
           }
         };
-        console.error('Detailed Permission Error:', JSON.stringify(errInfo, null, 2));
+        console.error('Detailed Permission Error:', safeStringify(errInfo));
       }
     }
   };

@@ -1,6 +1,7 @@
 import { db, auth as firebaseAuth } from '../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { UserProfile } from '../types';
+import { safeStringify } from '../lib/utils';
 
 enum OperationType {
   CREATE = 'create',
@@ -49,8 +50,8 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.error('Firestore Error: ', safeStringify(errInfo));
+  throw new Error(safeStringify(errInfo));
 }
 
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
