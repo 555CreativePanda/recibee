@@ -12,6 +12,16 @@ const PORT = 3000;
 // Trust proxy is required for rate limiting behind Cloud Run/GFE/Vercel
 app.set('trust proxy', 1);
 
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV,
+    vercel: process.env.VERCEL === '1'
+  });
+});
+
 // Security headers - temporarily disabled to debug Auth issues
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -28,7 +38,7 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests from this IP, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false }, // Suppress proxy validation warnings
+  skip: () => process.env.NODE_ENV === 'development',
 });
 
 // Helper to decode HTML entities and clean text
@@ -76,6 +86,8 @@ const parseDuration = (duration: string) => {
 // API Route for importing recipes
 app.post('/api/import', apiLimiter, async (req, res) => {
   let { url } = req.body;
+  console.log(`[Import] Request received for URL: ${url}`);
+  
   if (!url) return res.status(400).json({ error: 'URL is required' });
 
   // Normalize URL
@@ -85,20 +97,18 @@ app.post('/api/import', apiLimiter, async (req, res) => {
   }
 
   // Validate URL
-  let targetUrl: URL;
   try {
-    targetUrl = new URL(url);
+    const targetUrl = new URL(url);
     if (!['http:', 'https:'].includes(targetUrl.protocol)) {
       return res.status(400).json({ error: 'Only HTTP and HTTPS protocols are allowed.' });
     }
     
-    // Prevent access to internal networks (basic check)
     const hostname = targetUrl.hostname.toLowerCase();
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
       return res.status(400).json({ error: 'Access to internal network addresses is forbidden.' });
     }
   } catch (e) {
-    return res.status(400).json({ error: 'Invalid URL format. Please provide a valid web address.' });
+    return res.status(400).json({ error: 'Invalid URL format.' });
   }
 
   const fetchWithRetry = async (urlToFetch: string, useProxy = false, proxyIndex = 0): Promise<any> => {
@@ -108,20 +118,18 @@ app.post('/api/import', apiLimiter, async (req, res) => {
     ];
 
     const finalUrl = useProxy ? proxies[proxyIndex](urlToFetch) : urlToFetch;
-    console.log(`Fetching: ${finalUrl} (Proxy: ${useProxy}, Index: ${proxyIndex})`);
+    console.log(`[Import] Fetching: ${finalUrl} (Proxy: ${useProxy}, Index: ${proxyIndex})`);
     
     return axios.get(finalUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
         'Referer': 'https://www.google.com/',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
       },
-      timeout: 2000, // Reduced to 2s for serverless
+      timeout: 2500, // Slightly increased but still safe
       maxRedirects: 5,
-      validateStatus: (status) => status < 400 // Only resolve if status is < 400
+      responseType: 'text',
+      validateStatus: (status) => status < 400
     });
   };
 
@@ -130,18 +138,16 @@ app.post('/api/import', apiLimiter, async (req, res) => {
     try {
       response = await fetchWithRetry(url);
     } catch (error: any) {
-      console.log(`Direct fetch failed: ${error.message}`);
+      console.log(`[Import] Direct fetch failed: ${error.message}`);
       try {
-        console.log('Trying first proxy fallback (allorigins)...');
         response = await fetchWithRetry(url, true, 0);
       } catch (proxyError1: any) {
-        console.log(`First proxy failed: ${proxyError1.message}`);
+        console.log(`[Import] First proxy failed: ${proxyError1.message}`);
         try {
-          console.log('Trying second proxy fallback (codetabs)...');
           response = await fetchWithRetry(url, true, 1);
         } catch (proxyError2: any) {
-          console.log(`Second proxy failed: ${proxyError2.message}`);
-          throw new Error(`All fetch attempts failed. The website might be blocking automated access. Error: ${proxyError2.message}`);
+          console.log(`[Import] Second proxy failed: ${proxyError2.message}`);
+          throw new Error(`The website is blocking automated access. Please try another URL or copy-paste manually.`);
         }
       }
     }
@@ -150,6 +156,7 @@ app.post('/api/import', apiLimiter, async (req, res) => {
       throw new Error('Empty response from server');
     }
 
+    console.log(`[Import] Successfully fetched content. Length: ${response.data.length}`);
     const $ = cheerio.load(response.data);
     const jsonLdScripts = $('script[type="application/ld+json"]');
     
@@ -524,14 +531,20 @@ app.post('/api/import', apiLimiter, async (req, res) => {
     }
 
     if (ingredients.length === 0 && steps.length === 0) {
+      console.log('[Import] Standard extraction failed, preparing raw text for AI');
       // If standard extraction fails, return the raw text so the frontend can use Gemini
-      const pageText = $('body').text().replace(/\s+/g, ' ').substring(0, 15000);
+      const clone = $('body').clone();
+      clone.find('script, style, noscript, iframe, svg, nav, footer, header').remove();
+      const pageText = clone.text().replace(/\s+/g, ' ').trim().substring(0, 15000);
+      
       return res.json({ 
         needsAI: true, 
         rawText: pageText,
         title: decodeHtml(title) || 'Imported Recipe'
       });
     }
+
+    console.log(`[Import] Success! Extracted ${ingredients.length} ingredients and ${steps.length} steps.`);
 
     res.json({
       title: decodeHtml(title) || 'Imported Recipe',
@@ -625,8 +638,12 @@ export async function createServer() {
 }
 
 // Only start the server if this file is run directly and not on Vercel
-const isMain = import.meta.url.endsWith(path.basename(process.argv[1] || ''));
-const isVercel = process.env.VERCEL === '1';
+const isVercel = process.env.VERCEL === '1' || process.env.NOW_REGION;
+const isMain = process.argv[1] && (
+  import.meta.url.includes(path.basename(process.argv[1])) ||
+  process.argv[1].endsWith('server.ts') ||
+  process.argv[1].endsWith('server.js')
+);
 
 if (isMain && !isVercel) {
   createServer().then(() => {
