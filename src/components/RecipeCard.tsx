@@ -177,7 +177,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     return null;
   };
 
-  const getStepDiff = (step: string, idx: number) => {
+  const getStepDiff = (stepText: string, idx: number) => {
     if (recipe.parent_id && !parentRecipe) return null;
 
     const baseSteps = parentRecipe?.steps || recipe.original_steps;
@@ -185,10 +185,11 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
     // Simple index-based comparison for steps
     const originalStep = baseSteps[idx];
+    const originalText = typeof originalStep === 'object' ? originalStep.text : originalStep;
     
     if (originalStep === undefined) return { type: 'new' };
-    if (originalStep.trim() !== step.trim()) {
-      return { type: 'changed', original: originalStep };
+    if (originalText.trim() !== stepText.trim()) {
+      return { type: 'changed', original: originalText };
     }
     
     return null;
@@ -555,8 +556,8 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                 </div>
                 <ol className="space-y-4">
                   {recipe.steps.map((step, idx) => {
-                    const isSection = step.startsWith('[SECTION]:');
-                    const text = isSection ? step.replace('[SECTION]:', '').trim() : step;
+                    const isSection = typeof step === 'object' ? step.isSubheading : step.startsWith('[SECTION]:');
+                    const text = typeof step === 'object' ? step.text : (isSection ? step.replace('[SECTION]:', '').trim() : step);
                     
                     if (isSection) {
                       return (
@@ -568,7 +569,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                       );
                     }
 
-                    const diff = getStepDiff(step, idx);
+                    const diff = getStepDiff(typeof step === 'string' ? step : step.text, idx);
                     const isNew = diff?.type === 'new';
                     const isChanged = diff?.type === 'changed';
 

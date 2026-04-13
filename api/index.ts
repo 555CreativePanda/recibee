@@ -61,45 +61,165 @@ const parseDuration = (duration: string) => {
 
 const parseIngredient = (ing: string) => {
   let cleanIng = decodeHtml(ing).trim().replace(/\s+/g, ' ');
+  // Remove common footnote markers like ¹²³
   cleanIng = cleanIng.replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰]/g, '');
+  
   let amount = '';
   let remaining = cleanIng;
   let unit = '';
+
+  // 1. Check for amount at the beginning
+  // Handles: "1", "1 1/2", "1-2", "0.5", "½", "1 to 2", "A few", "To taste"
   const amountRegex = /^(\d+\s+to\s+\d+|\d+[\s-–—]+\d+|\d+\s+[\d\/]+|\d+[\u00BC-\u00BE\u2150-\u215E]|[\d\/]+|[\u00BC-\u00BE\u2150-\u215E]|[\u00BC-\u00BE\u2150-\u215E][\s-–—]+[\u00BC-\u00BE\u2150-\u215E]|\d+[\s-–—]+[\u00BC-\u00BE\u2150-\u215E]|\d*\.\d+|\d+|[Aa]\s+few|[Ss]ome|[Tt]o\s+taste)/;
   const amountMatch = cleanIng.match(amountRegex);
+  
   if (amountMatch) {
     amount = amountMatch[0].trim();
     remaining = cleanIng.slice(amountMatch[0].length).trim();
-  }
-  const words = remaining.split(' ');
-  let item = remaining;
-  // Simple unit detection
-  const commonUnits = ['grams', 'gram', 'g', 'kg', 'cup', 'cups', 'tsp', 'teaspoon', 'tbsp', 'tablespoon', 'ml', 'oz', 'ounce', 'lb', 'pound'];
-  if (words.length > 0) {
-    const firstWordClean = words[0].toLowerCase().replace(/[^a-z]/g, '');
-    if (commonUnits.includes(firstWordClean)) {
-      unit = words[0];
-      item = words.slice(1).join(' ');
+  } else {
+    // 2. Check for amount in parentheses at the end: "Item (Amount)"
+    const trailingAmountRegex = /\s*\(([^)]+)\)$/;
+    const trailingMatch = cleanIng.match(trailingAmountRegex);
+    if (trailingMatch) {
+      amount = trailingMatch[1].trim();
+      remaining = cleanIng.replace(trailingAmountRegex, '').trim();
     }
   }
-  return { item: item.trim(), amount: amount || '', unit: unit || '' };
+
+  // 3. Detect Unit
+  const commonUnits = [
+    'grams', 'gram', 'g', 'kg', 'kilograms', 'kilogram',
+    'cup', 'cups', 'c',
+    'tsp', 'teaspoon', 'teaspoons',
+    'tbsp', 'tablespoon', 'tablespoons',
+    'ml', 'milliliters', 'millilitre', 'l', 'liters', 'litre',
+    'oz', 'ounce', 'ounces',
+    'lb', 'pound', 'pounds',
+    'pinch', 'pinches',
+    'dash', 'dashes',
+    'clove', 'cloves',
+    'can', 'cans',
+    'packet', 'packets',
+    'package', 'pkg',
+    'container', 'containers',
+    'jar', 'jars',
+    'bottle', 'bottles',
+    'bag', 'bags',
+    'box', 'boxes',
+    'tub', 'tubs',
+    'envelope', 'envelopes',
+    'slice', 'slices',
+    'handful', 'handfuls',
+    'sprig', 'sprigs',
+    'stalk', 'stalks',
+    'head', 'heads',
+    'bunch', 'bunches',
+    'leaf', 'leaves',
+    'inch', 'inches',
+    'piece', 'pieces',
+    'strip', 'strips'
+  ];
+
+  const words = remaining.split(' ');
+  let item = remaining;
+
+  if (words.length > 0) {
+    // Check for two-word units like "fluid ounce" or "large cloves"
+    if (words.length > 1) {
+      const twoWordsClean = (words[0] + words[1]).toLowerCase().replace(/[^a-z]/g, '');
+      if (commonUnits.includes(twoWordsClean)) {
+        unit = words[0] + ' ' + words[1];
+        item = words.slice(2).join(' ');
+      }
+    }
+
+    if (!unit) {
+      const firstWordClean = words[0].toLowerCase().replace(/[^a-z]/g, '');
+      if (commonUnits.includes(firstWordClean)) {
+        unit = words[0];
+        item = words.slice(1).join(' ');
+      } else if (words.length > 1) {
+        // Check if second word is a unit (e.g., "1 large onion" -> item: "large onion", unit: "")
+        // or "1 cup flour" -> amount: 1, unit: cup, item: flour
+        const secondWordClean = words[1].toLowerCase().replace(/[^a-z]/g, '');
+        if (commonUnits.includes(secondWordClean)) {
+          // If first word is something like "large", "small", "medium", it's part of the item or a modifier
+          const modifiers = ['large', 'small', 'medium', 'big', 'extra', 'heaping', 'packed', 'level'];
+          if (modifiers.includes(words[0].toLowerCase())) {
+            unit = words[1];
+            item = words[0] + ' ' + words.slice(2).join(' ');
+          } else {
+            // Check if first word is actually a number that didn't get caught (e.g. "One")
+            const isFirstWordNumeric = /^([\d\/]+|[\u00BC-\u00BE\u2150-\u215E])$/.test(words[0]);
+            if (!isFirstWordNumeric) {
+               // It's likely a subheading or a complex item
+            } else {
+              amount = (amount + ' ' + words[0]).trim();
+              unit = words[1];
+              item = words.slice(2).join(' ');
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Detect subheadings (e.g., "MARINADE:", "FOR THE CURRY")
+  const isHeader = cleanIng.endsWith(':') || (cleanIng === cleanIng.toUpperCase() && cleanIng.length > 3);
+
+  return { 
+    item: item.trim() || remaining || 'Unknown Item', 
+    amount: amount || '', 
+    unit: unit || '',
+    isHeader
+  };
 };
 
-const parseSteps = (instructions: any): string[] => {
+const parseSteps = (instructions: any): any[] => {
   if (!instructions) return [];
-  if (typeof instructions === 'string') return [decodeHtml(instructions)];
+  
+  // If it's a string, split by common delimiters if it looks like multiple steps
+  if (typeof instructions === 'string') {
+    const decoded = decodeHtml(instructions);
+    if (decoded.includes('\n')) {
+      return decoded.split('\n').filter(s => s.trim()).map(s => ({ text: s.trim() }));
+    }
+    return [{ text: decoded }];
+  }
+
   if (Array.isArray(instructions)) {
     return instructions.flatMap(item => {
-      if (typeof item === 'string') return [decodeHtml(item)];
-      if (item.text) return [decodeHtml(item.text)];
+      if (typeof item === 'string') return [{ text: decodeHtml(item) }];
+      
+      // Handle HowToSection
+      if (item['@type'] === 'HowToSection') {
+        const sectionName = decodeHtml(item.name || '');
+        const sectionSteps = parseSteps(item.itemListElement || item.recipeInstructions);
+        return [
+          ...(sectionName ? [{ text: sectionName, isSubheading: true }] : []),
+          ...sectionSteps
+        ];
+      }
+
+      if (item.text) return [{ text: decodeHtml(item.text) }];
       if (item.itemListElement) return parseSteps(item.itemListElement);
       return [];
     });
   }
+
   if (typeof instructions === 'object') {
-    if (instructions.text) return [decodeHtml(instructions.text)];
+    if (instructions['@type'] === 'HowToSection') {
+      const sectionName = decodeHtml(instructions.name || '');
+      const sectionSteps = parseSteps(instructions.itemListElement || instructions.recipeInstructions);
+      return [
+        ...(sectionName ? [{ text: sectionName, isSubheading: true }] : []),
+        ...sectionSteps
+      ];
+    }
+    if (instructions.text) return [{ text: decodeHtml(instructions.text) }];
     if (instructions.itemListElement) return parseSteps(instructions.itemListElement);
   }
+
   return [];
 };
 

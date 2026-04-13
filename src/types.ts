@@ -6,6 +6,11 @@ export interface Ingredient {
   isHeader?: boolean;
 }
 
+export interface Step {
+  text: string;
+  isSubheading?: boolean;
+}
+
 export interface UserProfile {
   uid: string;
   email?: string;
@@ -20,8 +25,8 @@ export interface Recipe {
   title: string;
   ingredients: Ingredient[];
   original_ingredients?: Ingredient[] | null;
-  steps: string[];
-  original_steps?: string[] | null;
+  steps: (string | Step)[];
+  original_steps?: (string | Step)[] | null;
   prep_time?: string | null;
   cook_time?: string | null;
   servings?: string | null;

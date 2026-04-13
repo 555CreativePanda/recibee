@@ -33,11 +33,17 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
     }))
   );
   
-  const [steps, setSteps] = useState<{ id: string, text: string }[]>(
-    recipe.steps.map(step => ({
-      id: Math.random().toString(36).slice(2, 11),
-      text: step || ''
-    }))
+  const [steps, setSteps] = useState<{ id: string, text: string, isSubheading: boolean }[]>(
+    recipe.steps.map(step => {
+      const isObj = typeof step === 'object';
+      const text = isObj ? step.text : step;
+      const isSub = isObj ? !!step.isSubheading : text.startsWith('[SECTION]:');
+      return {
+        id: Math.random().toString(36).slice(2, 11),
+        text: isSub && !isObj ? text.replace('[SECTION]:', '').trim() : text,
+        isSubheading: isSub
+      };
+    })
   );
   const [errors, setErrors] = useState<{ title: boolean, ingredients: number[], steps: number[] }>({ 
     title: false, 
@@ -112,14 +118,15 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
     const newIndex = steps.length;
     setSteps([...steps, { 
       id: Math.random().toString(36).slice(2, 11),
-      text: '' 
+      text: '',
+      isSubheading: false
     }]);
     setFocusRequest({ type: 'step', index: newIndex });
   };
 
-  const updateStep = (index: number, value: string) => {
+  const updateStep = (index: number, value: string | boolean, field: 'text' | 'isSubheading' = 'text') => {
     const newSteps = [...steps];
-    newSteps[index] = { ...newSteps[index], text: value };
+    newSteps[index] = { ...newSteps[index], [field]: value } as any;
     setSteps(newSteps);
   };
 
@@ -168,7 +175,7 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
       equipment,
       notes,
       ingredients: ingredients.map(({ id, ...ing }) => ing), // Strip temp IDs before saving
-      steps: steps.map(s => s.text)
+      steps: steps.map(({ id, ...s }) => s)
     });
   };
 
@@ -194,7 +201,8 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
 
     const originalStep = baseSteps[idx];
     if (originalStep === undefined) return { type: 'new' };
-    if (originalStep.trim() !== stepText.trim()) return { type: 'changed', original: originalStep };
+    const originalText = typeof originalStep === 'object' ? originalStep.text : originalStep;
+    if (originalText.trim() !== stepText.trim()) return { type: 'changed', original: originalText };
     return null;
   };
 
@@ -548,7 +556,7 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
         
         <div className="space-y-3">
           {steps.map((step, idx) => {
-            const isSection = step.text.startsWith('[SECTION]:');
+            const isSection = step.isSubheading;
             const diff = getStepDiff(step.text, idx);
             const isNew = diff?.type === 'new';
             const isChanged = diff?.type === 'changed';
@@ -595,7 +603,7 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
                     <p className="text-[10px] text-red-500 font-medium">Step cannot be empty</p>
                   )}
                   <button
-                    onClick={() => updateStep(idx, isSection ? step.text.replace('[SECTION]:', '').trim() : `[SECTION]: ${step.text}`)}
+                    onClick={() => updateStep(idx, !isSection, 'isSubheading')}
                     className="text-[10px] uppercase tracking-widest font-bold text-carbon-gray-30 hover:text-carbon-blue-60 transition-colors"
                   >
                     {isSection ? 'Convert to Step' : 'Convert to Section Header'}

@@ -248,8 +248,8 @@ function AppContent() {
             Return ONLY a JSON object with this structure:
             {
               "title": "string",
-              "ingredients": [{"item": "string", "amount": "string", "unit": "string"}],
-              "steps": ["string"],
+              "ingredients": [{"item": "string", "amount": "string", "unit": "string", "isHeader": boolean}],
+              "steps": [{"text": "string", "isSubheading": boolean}],
               "prep_time": "string or null",
               "cook_time": "string or null",
               "servings": "string or null",
@@ -257,6 +257,9 @@ function AppContent() {
               "course": "string or null",
               "keywords": ["string"]
             }
+            
+            Note: "isHeader" in ingredients should be true if the item is a section title (e.g. "For the marinade").
+            "isSubheading" in steps should be true if the text is a section title.
             
             Text:
             ${data.rawText}
