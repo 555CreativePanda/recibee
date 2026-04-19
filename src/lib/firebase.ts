@@ -30,7 +30,11 @@ const firebaseConfig = {
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)'
 };
 
-const app = initializeApp(firebaseConfig);
+// Global flag to check if the app is properly configured
+export const isConfigValid = !!(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
+
+// Only initialize if we have at least the critical keys to prevent "invalid-api-key" fatal errors on load
+const app = isConfigValid ? initializeApp(firebaseConfig) : initializeApp({ apiKey: "temporary-placeholder-to-prevent-crash", projectId: "placeholder" });
 
 // Use initializeAuth with explicit persistence for maximum reliability in sandboxed environments
 export const auth = initializeAuth(app, {
@@ -43,11 +47,8 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 // Connection test as per critical guidelines
 import { getDocFromServer, doc } from 'firebase/firestore';
 async function testConnection() {
+  if (!isConfigValid) return;
   try {
-    if (!firebaseConfig.apiKey) {
-      console.warn('Firebase API Key is missing. Check your environment variables.');
-      return;
-    }
     console.log('Testing Firestore connectivity...');
     await getDocFromServer(doc(db, '_internal_', 'connectivity_test'));
     console.log('Firestore connection verified.');
@@ -62,7 +63,11 @@ testConnection();
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-console.log('Firebase initialized with Project ID:', firebaseConfig.projectId);
+if (isConfigValid) {
+  console.log('Firebase initialized with Project ID:', firebaseConfig.projectId);
+} else {
+  console.warn('Firebase is NOT fully configured. Check VITE_FIREBASE_* environment variables.');
+}
 
 export { 
   signInWithPopup, 

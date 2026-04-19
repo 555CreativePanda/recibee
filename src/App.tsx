@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { db, auth, googleProvider, signOut, onAuthStateChanged, User } from './lib/firebase';
+import { db, auth, googleProvider, signOut, onAuthStateChanged, User, isConfigValid } from './lib/firebase';
 import { collection, query, where, getDocs, getDoc, addDoc, updateDoc, doc, orderBy, onSnapshot, setDoc, serverTimestamp, limit, deleteField } from 'firebase/firestore';
 import { Recipe } from './types';
 import { GoogleGenAI } from '@google/genai';
 import { RecipeEditor } from './components/RecipeEditor';
 import { AuthModal } from './components/AuthModal';
 import { cn, safeStringify } from './lib/utils';
-import { Plus, ChefHat, Search, Filter, GitBranch, Download, X, Loader2, LogIn, LogOut, User as UserIcon, Database } from 'lucide-react';
+import { Plus, ChefHat, Search, Filter, GitBranch, Download, X, Loader2, LogIn, LogOut, User as UserIcon, Database, AlertCircle, Copy, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HomePage } from './pages/HomePage';
 import { RecipePage } from './pages/RecipePage';
@@ -23,6 +23,105 @@ import { saveRecipe, forkRecipe, clearRecipeCache, clearTabCache } from './servi
 import { getUserProfile } from './services/userService';
 import { UserProfile } from './types';
 
+function ConfigurationMissingScreen() {
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const envVars = [
+    'VITE_FIREBASE_API_KEY',
+    'VITE_FIREBASE_AUTH_DOMAIN',
+    'VITE_FIREBASE_PROJECT_ID',
+    'VITE_FIREBASE_STORAGE_BUCKET',
+    'VITE_FIREBASE_MESSAGING_SENDER_ID',
+    'VITE_FIREBASE_APP_ID',
+    'VITE_FIREBASE_DATABASE_ID'
+  ];
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(text);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#fafaf9] flex items-center justify-center p-6 font-sans antialiased text-[#292524]">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-2xl w-full bg-white border border-[#e7e5e4] rounded-[32px] shadow-2xl overflow-hidden"
+      >
+        <div className="p-8 md:p-12">
+          <div className="flex items-center gap-6 mb-10">
+            <div className="bg-orange-50 p-5 rounded-2xl">
+              <Database className="text-orange-600 animate-pulse" size={40} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-serif font-bold text-stone-900 mb-2">Configuration Required</h1>
+              <p className="text-stone-500 font-medium">Your ReciBee deployment is almost ready.</p>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <AlertCircle className="text-red-600" size={20} />
+                <h2 className="text-sm font-bold uppercase tracking-widest text-red-600">Action Required: Vercel Setup</h2>
+              </div>
+              <p className="text-sm text-red-800 leading-relaxed font-medium">
+                To keep your app secure, Firebase keys are hidden from the code. You must add them as <strong>Environment Variables</strong> in your Vercel Dashboard to continue.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-[10px] uppercase font-bold tracking-[0.2em] text-stone-400">Missing Variables</h3>
+              <div className="grid gap-2">
+                {envVars.map(v => (
+                  <div key={v} className="group flex items-center justify-between p-4 bg-stone-50 border border-stone-200 rounded-xl hover:border-orange-600 transition-all">
+                    <code className="text-[11px] font-mono font-medium text-stone-600 group-hover:text-orange-600">{v}</code>
+                    <button 
+                      onClick={() => handleCopy(v)}
+                      className="text-stone-400 hover:text-orange-600 transition-colors"
+                    >
+                      {copied === v ? <CheckCircle2 size={16} className="text-green-500" /> : <Copy size={16} />}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-stone-100">
+              <p className="text-xs text-stone-400 font-medium mb-6 flex items-center gap-2">
+                <ChefHat size={14} />
+                After adding these keys in Vercel settings, you <strong>must redeploy</strong> your app.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <a 
+                  href="https://vercel.com/dashboard" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 bg-stone-900 hover:bg-black text-white px-6 py-4 rounded-2xl text-xs font-bold transition-all uppercase tracking-widest active:scale-95"
+                >
+                  Go to Vercel Dashboard
+                </a>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="flex-1 border border-stone-200 hover:bg-stone-50 text-stone-600 px-6 py-4 rounded-2xl text-xs font-bold transition-all uppercase tracking-widest"
+                >
+                  I've Done This, Refresh
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-stone-50 border-t border-stone-100 px-12 py-6">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 text-center">
+            ReciBee v0.0.1 • Security Handshake State
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,6 +134,11 @@ function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+
+  // Fallback UI if Firebase is not correctly configured
+  if (!isConfigValid) {
+    return <ConfigurationMissingScreen />;
+  }
   
   // Notification Modal State
   const [notification, setNotification] = useState<{ title: string, message: string } | null>(null);
