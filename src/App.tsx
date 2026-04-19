@@ -338,7 +338,12 @@ function AppContent() {
       if (data.needsAI) {
         setImportStatus(data.useUrlContext ? 'Bypassing protection with Gemini AI...' : 'Extracting ingredients with AI...');
         try {
-          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+          const apiKey = process.env.GEMINI_API_KEY;
+          if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
+            console.error('Gemini API Key is missing from the environment.');
+            throw new Error('Gemini API Key is not configured. Please add GEMINI_API_KEY to your Secrets in the AI Studio settings.');
+          }
+          const ai = new GoogleGenAI({ apiKey });
           
           let contents = '';
           let tools: any[] = [];

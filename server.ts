@@ -5,6 +5,9 @@ import path from 'path';
 const PORT = 3000;
 
 async function startDevServer() {
+  console.log('Checking environment...');
+  console.log('GEMINI_API_KEY present:', !!process.env.GEMINI_API_KEY);
+  
   const vite = await createViteServer({
     server: { middlewareMode: true },
     appType: 'spa',
