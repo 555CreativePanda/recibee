@@ -5,7 +5,7 @@ import { cn } from '../lib/utils';
 import { Plus, Database, GitBranch, Filter, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { SEO } from '../components/SEO';
-import { getRecipesPaginated, getRecipesByIds, getTabCache, setTabCache } from '../services/recipeService';
+import { getRecipesPaginated, getRecipesByIds, getTabCache, setTabCache, getRecipesCount } from '../services/recipeService';
 
 interface HomePageProps {
   searchQuery: string;
@@ -41,8 +41,24 @@ export function HomePage({
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const ITEMS_PER_PAGE = 10;
   const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      if (activeTab === 'all') {
+        const count = await getRecipesCount();
+        setTotalCount(count);
+      } else if (activeTab === 'mine' && user) {
+        const count = await getRecipesCount({ userId: user.uid });
+        setTotalCount(count);
+      } else if (activeTab === 'favorites') {
+        setTotalCount(starredRecipeIds.size);
+      }
+    };
+    fetchCount();
+  }, [activeTab, user?.uid, starredRecipeIds.size]);
 
   const loadRecipes = useCallback(async (reset = false) => {
     try {
@@ -208,7 +224,7 @@ export function HomePage({
         <div className="flex items-center gap-4 text-xs md:text-sm text-kitchen-muted font-bold uppercase tracking-widest pb-4">
           <div className="flex items-center gap-2">
             <GitBranch size={16} className="text-kitchen-primary" />
-            <span>{recipes.length} recipes</span>
+            <span>{totalCount} {totalCount === 1 ? 'recipe' : 'recipes'}</span>
           </div>
           <div className="h-4 w-[1px] bg-kitchen-border" />
           <div className="flex items-center gap-2">

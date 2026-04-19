@@ -106,7 +106,7 @@ export function LandingPage() {
 
 
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center px-6 overflow-hidden">
+      <section className="relative h-screen flex items-center justify-center px-6 pt-32 overflow-hidden">
         {/* Immersive Background */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(234,88,12,0.05),transparent_50%)]" />
@@ -138,7 +138,7 @@ export function LandingPage() {
           style={{ opacity, scale, y }}
           className="container mx-auto max-w-6xl relative z-10"
         >
-          <div className="flex flex-col items-center text-center space-y-12">
+          <div className="flex flex-col items-center text-center space-y-12 mt-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

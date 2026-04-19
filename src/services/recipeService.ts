@@ -1,5 +1,5 @@
 import { db, auth as firebaseAuth } from '../lib/firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp, getDoc, increment, getDocs, query, orderBy, limit, startAfter, where, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, serverTimestamp, getDoc, increment, getDocs, query, orderBy, limit, startAfter, where, Timestamp, getCountFromServer } from 'firebase/firestore';
 import { Recipe } from '../types';
 import { safeStringify } from '../lib/utils';
 
@@ -206,6 +206,22 @@ export const getChildForks = async (parentId: string, limitCount = 5) => {
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, `recipes (forks of ${parentId})`);
     throw error;
+  }
+};
+
+export const getRecipesCount = async (filters?: { userId?: string }) => {
+  try {
+    let q = query(collection(db, 'recipes'));
+    
+    if (filters?.userId) {
+      q = query(q, where('user_id', '==', filters.userId));
+    }
+    
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+  } catch (error) {
+    console.error('Error getting recipe count:', error);
+    return 0;
   }
 };
 
