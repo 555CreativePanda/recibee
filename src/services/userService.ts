@@ -54,8 +54,19 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(safeStringify(errInfo));
 }
 
-export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+// Simple cache for user profiles
+const profileCache: Record<string, { data: UserProfile; timestamp: number }> = {};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+export const getUserProfile = async (uid: string, forceRefresh = false): Promise<UserProfile | null> => {
   const path = `users/${uid}`;
+  
+  // Check cache
+  const now = Date.now();
+  if (!forceRefresh && profileCache[uid] && (now - profileCache[uid].timestamp < CACHE_TTL)) {
+    return profileCache[uid].data;
+  }
+
   try {
     const docSnap = await getDoc(doc(db, 'users', uid));
     if (docSnap.exists()) {
@@ -72,6 +83,9 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
           console.warn('Could not fetch private user data', e);
         }
       }
+      
+      // Update cache
+      profileCache[uid] = { data, timestamp: Date.now() };
       
       return data;
     }

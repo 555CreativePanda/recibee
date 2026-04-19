@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth } from '../lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, doc, getDocs, limit } from 'firebase/firestore';
 import { Recipe } from '../types';
 import { RecipeCard } from '../components/RecipeCard';
 import { RecipeEditor } from '../components/RecipeEditor';
 import { Loader2, ArrowLeft, GitFork } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getRecipe, forkRecipe, saveRecipe } from '../services/recipeService';
+import { getRecipe, forkRecipe, saveRecipe, getChildForks } from '../services/recipeService';
 import { SEO } from '../components/SEO';
 
 import { ForkTree } from '../components/ForkTree';
@@ -51,29 +51,17 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
 
     fetchInitialRecipe();
 
-    // Listen for ALL recipes to build the fork tree
-    const recipesQuery = query(
-      collection(db, 'recipes'),
-      orderBy('created_at', 'desc')
-    );
+    // Fetch direct forks once instead of listening to all recipes
+    const fetchForks = async () => {
+      try {
+        const fetched = await getChildForks(id, 20);
+        setAllRecipes(fetched);
+      } catch (error) {
+        console.error('Error fetching forks:', error);
+      }
+    };
 
-    const unsubscribeAll = onSnapshot(recipesQuery, (snapshot) => {
-      const fetched = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          ...data,
-          id: doc.id,
-          created_at: data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString(),
-          updated_at: data.updated_at?.toDate?.()?.toISOString() || data.updated_at || data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString()
-        };
-      }) as Recipe[];
-      
-      // Ensure unique recipes by ID to avoid duplicate key errors
-      const uniqueFetched = fetched.filter((recipe, index, self) =>
-        index === self.findIndex((t) => t.id === recipe.id)
-      );
-      setAllRecipes(uniqueFetched);
-    });
+    fetchForks();
 
     // Also listen for changes to the main recipe
     const unsubscribeRecipe = onSnapshot(doc(db, 'recipes', id), (docSnap) => {
@@ -89,14 +77,13 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
     });
 
     return () => {
-      unsubscribeAll();
       unsubscribeRecipe();
     };
   }, [id]);
 
   const handleFork = (targetRecipe: Recipe) => {
     console.log('handleFork triggered in RecipePage.tsx for recipe:', targetRecipe.id);
-    if (!ensureAuth('fork and modify recipes')) return;
+    if (!ensureAuth('tweak recipes')) return;
 
     if (!user) return;
 
@@ -116,6 +103,8 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
       keywords: targetRecipe.keywords ? [...targetRecipe.keywords] : [],
       notes: targetRecipe.notes || '',
       parent_id: targetRecipe.id,
+      parent_title: targetRecipe.title,
+      parent_user_id: targetRecipe.user_id,
       user_id: user.uid,
       source_url: targetRecipe.source_url || null,
       created_at: new Date().toISOString(),
@@ -135,7 +124,7 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
       if (isNew) {
         setNotification({
           title: 'Recipe Saved',
-          message: updatedRecipe.parent_id ? 'Fork created successfully!' : 'New recipe created successfully!'
+          message: updatedRecipe.parent_id ? 'Tweak saved successfully!' : 'New recipe saved successfully!'
         });
         navigate(`/recipe/${savedId}`);
       }
@@ -150,23 +139,23 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <Loader2 size={32} className="text-carbon-blue-60 animate-spin" />
-        <p className="text-sm font-mono text-carbon-gray-30">Loading recipe repository...</p>
+      <div className="flex flex-col items-center justify-center py-24 gap-6">
+        <Loader2 size={40} className="text-kitchen-primary animate-spin" />
+        <p className="text-sm font-bold text-kitchen-muted uppercase tracking-widest">Opening recipes...</p>
       </div>
     );
   }
 
   if (!recipe) {
     return (
-      <div className="text-center py-20">
-        <h2 className="text-2xl font-bold mb-4">Recipe not found</h2>
+      <div className="text-center py-24 bg-stone-50 rounded-3xl border border-kitchen-border">
+        <h2 className="text-3xl font-serif font-bold mb-6 text-kitchen-text">Recipe not found</h2>
         <button 
           onClick={() => navigate('/')}
-          className="text-carbon-blue-60 hover:underline flex items-center gap-2 mx-auto"
+          className="bg-kitchen-primary hover:bg-orange-700 text-white px-8 py-4 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-orange-100 uppercase tracking-widest flex items-center gap-3 mx-auto active:scale-95"
         >
-          <ArrowLeft size={16} />
-          Back to repository
+          <ArrowLeft size={20} />
+          Back to Explore
         </button>
       </div>
     );
@@ -176,15 +165,15 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
     <div className="space-y-8">
       <SEO 
         title={recipe.title} 
-        description={`Learn how to make ${recipe.title} on ReciBee. View ingredients, steps, and fork this recipe to make it your own.`}
+        description={`Learn how to make ${recipe.title} on ReciBee. View ingredients, steps, and tweak this recipe to make it your own.`}
         recipeData={recipe}
       />
       <button 
         onClick={() => navigate('/explore')}
-        className="text-carbon-gray-30 hover:text-white flex items-center gap-2 transition-colors text-sm font-medium"
+        className="text-kitchen-muted hover:text-kitchen-primary flex items-center gap-2 transition-all text-sm font-bold uppercase tracking-widest group"
       >
-        <ArrowLeft size={16} />
-        Back to repository
+        <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+        Back to Explore
       </button>
 
       <AnimatePresence mode="wait">
@@ -208,7 +197,7 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            className="space-y-12"
+            className="space-y-16"
           >
             <RecipeCard
               recipe={recipe}
@@ -220,12 +209,15 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
               user={user}
               expandedDefault={true}
               onUserClick={onUserClick}
+              allRecipes={allRecipes}
             />
 
-            <div className="space-y-6">
-              <div className="flex items-center gap-3 border-b border-carbon-gray-80 pb-4">
-                <GitFork size={20} className="text-carbon-gray-30" />
-                <h3 className="text-lg font-medium">Fork Hierarchy</h3>
+            <div className="space-y-8">
+              <div className="flex items-center gap-4 border-b border-kitchen-border pb-6">
+                <div className="bg-stone-100 p-2 rounded-xl">
+                  <GitFork size={24} className="text-kitchen-primary" />
+                </div>
+                <h3 className="text-2xl font-serif font-bold text-kitchen-text">Recipe Lineage</h3>
               </div>
 
               <ForkTree 

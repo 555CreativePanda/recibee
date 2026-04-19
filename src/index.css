@@ -1,39 +1,46 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-carbon-gray-100: #161616;
-  --color-carbon-gray-90: #262626;
-  --color-carbon-gray-80: #393939;
-  --color-carbon-blue-60: #0f62fe;
-  --color-carbon-blue-70: #0043ce;
-  --color-carbon-white: #ffffff;
-  --color-carbon-gray-30: #c6c6c6;
+  --color-kitchen-bg: #fafaf9; /* stone-50 */
+  --color-kitchen-card: #ffffff;
+  --color-kitchen-text: #292524; /* stone-800 */
+  --color-kitchen-muted: #78716c; /* stone-500 */
+  --color-kitchen-border: #e7e5e4; /* stone-200 */
+  --color-kitchen-primary: #ea580c; /* orange-600 */
+  --color-kitchen-primary-hover: #c2410c; /* orange-700 */
+  --color-kitchen-secondary: #16a34a; /* green-600 */
+  --color-kitchen-secondary-hover: #15803d; /* green-700 */
 }
 
 @layer base {
   body {
-    @apply bg-carbon-gray-100 text-carbon-white font-sans antialiased;
+    @apply bg-kitchen-bg text-kitchen-text font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, .font-serif {
+    @apply font-serif;
   }
 }
 
-/* Carbon Table Styles */
-.carbon-table {
+/* Kitchen Table Styles */
+.kitchen-table {
   @apply w-full border-collapse text-sm;
 }
 
-.carbon-table th {
-  @apply bg-carbon-gray-90 text-carbon-gray-30 font-medium text-left p-4 border-b border-carbon-gray-80;
+.kitchen-table th {
+  @apply bg-stone-100 text-stone-600 font-semibold text-left p-4 border-b border-stone-200;
 }
 
-.carbon-table td {
-  @apply p-4 border-b border-carbon-gray-80 align-top;
+.kitchen-table td {
+  @apply p-4 border-b border-stone-100 align-top;
 }
 
-.carbon-table tr:hover td {
-  @apply bg-carbon-gray-80;
+.kitchen-table tr:hover td {
+  @apply bg-stone-50;
 }
 

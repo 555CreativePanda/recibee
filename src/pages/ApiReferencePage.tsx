@@ -46,22 +46,22 @@ export function ApiReferencePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-carbon-gray-100 text-white pb-20 font-sans">
+    <div className="min-h-screen bg-kitchen-bg text-kitchen-text pb-20 font-sans">
       <SEO 
         title="API Reference" 
         description="Technical documentation for the ReciBee API. Learn how to programmatically import recipes and integrate with our repository."
       />
       
       {/* Header */}
-      <header className="bg-carbon-gray-90 border-b border-carbon-gray-80 px-6 py-4 sticky top-0 z-10">
+      <header className="bg-white border-b border-kitchen-border px-6 py-4 sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto max-w-5xl flex items-center justify-between">
           <Link to="/explore" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="bg-carbon-blue-60 p-1.5">
+            <div className="bg-kitchen-primary p-1.5 rounded-xl">
               <ChefHat size={20} className="text-white" />
             </div>
-            <h1 className="text-xl font-semibold tracking-tight">ReciBee<span className="text-carbon-blue-60">/api</span></h1>
+            <h1 className="text-xl font-serif font-bold tracking-tight text-kitchen-text">ReciBee<span className="text-kitchen-primary font-sans ml-1 text-sm">/api</span></h1>
           </Link>
-          <Link to="/" className="text-sm font-medium text-carbon-gray-30 hover:text-white transition-colors">
+          <Link to="/" className="text-sm font-bold text-kitchen-muted hover:text-kitchen-primary transition-colors uppercase tracking-widest">
             Back to Home
           </Link>
         </div>
@@ -74,30 +74,30 @@ export function ApiReferencePage() {
           className="space-y-12"
         >
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-carbon-blue-60 font-mono text-xs uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-kitchen-primary font-bold text-xs uppercase tracking-widest">
               <Terminal size={14} />
               <span>Developer Interface</span>
             </div>
-            <h2 className="text-4xl font-bold tracking-tight">API Reference</h2>
-            <p className="text-carbon-gray-30 text-lg max-w-2xl">
-              Integrate ReciBee's powerful recipe extraction and repository features into your own tools and workflows.
+            <h2 className="text-4xl font-serif font-bold tracking-tight text-kitchen-text">API Reference</h2>
+            <p className="text-kitchen-muted text-lg max-w-2xl">
+              Integrate ReciBee's powerful recipe extraction features into your own tools and workflows.
             </p>
           </div>
 
           {/* Authentication Section */}
-          <section className="bg-carbon-gray-90 border border-carbon-gray-80 p-8 space-y-4">
-            <div className="flex items-center gap-3 text-white">
-              <Shield className="text-carbon-blue-60" size={20} />
-              <h3 className="text-xl font-semibold">Authentication</h3>
+          <section className="bg-white border border-kitchen-border p-8 rounded-2xl shadow-md space-y-4">
+            <div className="flex items-center gap-3 text-kitchen-text">
+              <Shield className="text-kitchen-primary" size={20} />
+              <h3 className="text-xl font-serif font-bold">Authentication</h3>
             </div>
-            <p className="text-carbon-gray-30 text-sm leading-relaxed">
-              All write operations require a valid Firebase ID Token passed in the <code className="bg-carbon-gray-100 px-1.5 py-0.5 rounded text-carbon-blue-60">Authorization</code> header as a Bearer token.
+            <p className="text-kitchen-muted text-sm leading-relaxed">
+              All write operations require a valid Firebase ID Token passed in the <code className="bg-stone-50 px-1.5 py-0.5 rounded text-kitchen-primary font-mono">Authorization</code> header as a Bearer token.
             </p>
-            <div className="bg-carbon-gray-100 p-4 rounded border border-carbon-gray-80 font-mono text-xs text-carbon-gray-30 relative group">
+            <div className="bg-stone-50 p-4 rounded-xl border border-kitchen-border font-mono text-xs text-kitchen-muted relative group">
               <pre>Authorization: Bearer {'<your_id_token>'}</pre>
               <button 
                 onClick={() => copyToClipboard('Authorization: Bearer <your_id_token>', 'auth')}
-                className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity hover:text-white"
+                className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity hover:text-kitchen-primary"
               >
                 {copied === 'auth' ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
               </button>
@@ -106,52 +106,52 @@ export function ApiReferencePage() {
 
           {/* Endpoints */}
           <div className="space-y-12">
-            <h3 className="text-sm font-mono text-carbon-gray-30 uppercase tracking-widest border-b border-carbon-gray-80 pb-4">Endpoints</h3>
+            <h3 className="text-sm font-bold text-kitchen-muted uppercase tracking-widest border-b border-kitchen-border pb-4">Endpoints</h3>
             
             {endpoints.map((endpoint, idx) => (
-              <div key={idx} className="space-y-6">
+              <div key={idx} className="space-y-6 bg-white border border-kitchen-border p-8 rounded-2xl shadow-md">
                 <div className="flex items-center gap-4">
                   <span className={cn(
-                    "px-2 py-1 text-[10px] font-bold rounded",
-                    endpoint.method === 'POST' ? "bg-green-500/10 text-green-500" : "bg-blue-500/10 text-blue-500"
+                    "px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider",
+                    endpoint.method === 'POST' ? "bg-green-50 text-green-600 border border-green-100" : "bg-blue-50 text-blue-600 border border-blue-100"
                   )}>
                     {endpoint.method}
                   </span>
-                  <code className="text-lg font-mono font-semibold">{endpoint.path}</code>
+                  <code className="text-lg font-mono font-bold text-kitchen-text">{endpoint.path}</code>
                 </div>
                 
-                <p className="text-carbon-gray-30 text-sm">{endpoint.description}</p>
+                <p className="text-kitchen-muted text-sm leading-relaxed">{endpoint.description}</p>
 
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <h4 className="text-xs font-mono text-carbon-gray-30 uppercase">Parameters</h4>
+                    <h4 className="text-xs font-bold text-kitchen-muted uppercase tracking-widest">Parameters</h4>
                     {endpoint.params.length > 0 ? (
-                      <div className="border border-carbon-gray-80 divide-y divide-carbon-gray-80">
+                      <div className="border border-kitchen-border rounded-xl overflow-hidden divide-y divide-kitchen-border">
                         {endpoint.params.map((param, pIdx) => (
-                          <div key={pIdx} className="p-3 flex justify-between items-start gap-4">
+                          <div key={pIdx} className="p-4 flex justify-between items-start gap-4 bg-stone-50/30">
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-mono text-sm text-white">{param.name}</span>
-                                {param.required && <span className="text-[10px] text-red-500 uppercase">Required</span>}
+                                <span className="font-mono text-sm font-bold text-kitchen-text">{param.name}</span>
+                                {param.required && <span className="text-[10px] text-red-500 font-bold uppercase">Required</span>}
                               </div>
-                              <p className="text-xs text-carbon-gray-30 mt-1">{param.description}</p>
+                              <p className="text-xs text-kitchen-muted mt-1">{param.description}</p>
                             </div>
-                            <span className="text-[10px] font-mono text-carbon-gray-30 bg-carbon-gray-100 px-1.5 py-0.5 rounded">{param.type}</span>
+                            <span className="text-[10px] font-mono text-kitchen-muted bg-stone-100 px-2 py-1 rounded-lg">{param.type}</span>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-carbon-gray-30 italic">No parameters required.</p>
+                      <p className="text-xs text-kitchen-muted italic">No parameters required.</p>
                     )}
                   </div>
 
                   <div className="space-y-4">
-                    <h4 className="text-xs font-mono text-carbon-gray-30 uppercase">Response Body</h4>
-                    <div className="bg-carbon-gray-100 p-4 rounded border border-carbon-gray-80 font-mono text-xs text-carbon-gray-30 relative group">
+                    <h4 className="text-xs font-bold text-kitchen-muted uppercase tracking-widest">Response Body</h4>
+                    <div className="bg-stone-50 p-4 rounded-xl border border-kitchen-border font-mono text-xs text-kitchen-muted relative group">
                       <pre className="overflow-x-auto">{endpoint.response}</pre>
                       <button 
                         onClick={() => copyToClipboard(endpoint.response, `resp-${idx}`)}
-                        className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity hover:text-white"
+                        className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity hover:text-kitchen-primary"
                       >
                         {copied === `resp-${idx}` ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                       </button>
@@ -163,17 +163,17 @@ export function ApiReferencePage() {
           </div>
 
           {/* Footer CTA */}
-          <div className="pt-12 border-t border-carbon-gray-80 flex flex-col items-center text-center gap-6">
-            <div className="p-4 bg-carbon-blue-60/10 rounded-full">
-              <Code className="text-carbon-blue-60" size={32} />
+          <div className="pt-12 border-t border-kitchen-border flex flex-col items-center text-center gap-6">
+            <div className="p-5 bg-orange-50 rounded-full">
+              <Code className="text-kitchen-primary" size={32} />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold">Need help integrating?</h3>
-              <p className="text-carbon-gray-30 max-w-md">
-                Check our documentation for high-level guides or reach out to our developer support team.
+              <h3 className="text-2xl font-serif font-bold text-kitchen-text">Need help integrating?</h3>
+              <p className="text-kitchen-muted max-w-md">
+                Check our guides for high-level documentation or reach out to our community.
               </p>
             </div>
-            <Link to="/docs" className="text-carbon-blue-60 hover:underline font-medium">
+            <Link to="/docs" className="text-kitchen-primary hover:underline font-bold uppercase tracking-widest text-sm">
               View Documentation
             </Link>
           </div>

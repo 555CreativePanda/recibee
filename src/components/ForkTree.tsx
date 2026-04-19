@@ -25,30 +25,30 @@ const TreeNode: React.FC<TreeNodeProps> = ({ recipe, allRecipes, level }) => {
     <div className="relative">
       {/* Vertical Connector Line */}
       {level > 0 && (
-        <div className="absolute -left-[21px] top-0 bottom-0 w-px bg-carbon-gray-80" />
+        <div className="absolute -left-[21px] top-0 bottom-0 w-px bg-stone-200" />
       )}
       
       <div className="flex items-start gap-3 py-2 relative">
         {/* Horizontal Branch Connector */}
         {level > 0 && (
-          <div className="absolute -left-[21px] top-6 w-5 h-px bg-carbon-gray-80" />
+          <div className="absolute -left-[21px] top-6 w-5 h-px bg-stone-200" />
         )}
 
-        <div className="flex-1 bg-carbon-gray-100/30 border border-carbon-gray-80 p-3 hover:border-carbon-blue-60 transition-all hover:bg-carbon-gray-100/50 group rounded-sm">
+        <div className="flex-1 bg-white border border-kitchen-border p-4 hover:border-kitchen-primary transition-all hover:shadow-md group rounded-2xl">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="bg-carbon-gray-80 p-1.5 rounded-sm">
-                <GitFork size={14} className="text-carbon-blue-60" />
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="bg-stone-50 p-2 rounded-xl group-hover:bg-orange-50 transition-colors">
+                <GitFork size={16} className="text-kitchen-primary" />
               </div>
               <div className="flex flex-col min-w-0">
                 <Link 
                   to={`/recipe/${recipe.id}`}
-                  className="text-sm font-bold text-white hover:underline truncate"
+                  className="text-base font-serif font-bold text-kitchen-text hover:text-kitchen-primary transition-colors truncate"
                 >
                   {recipe.title}
                 </Link>
-                <div className="flex items-center gap-2 text-[10px] text-carbon-gray-30 font-mono">
-                  <User size={10} />
+                <div className="flex items-center gap-2 text-[10px] text-kitchen-muted font-bold uppercase tracking-widest">
+                  <User size={12} />
                   <span>{userHandle}</span>
                   <span>•</span>
                   <span>{new Date(recipe.created_at).toLocaleDateString()}</span>
@@ -57,9 +57,9 @@ const TreeNode: React.FC<TreeNodeProps> = ({ recipe, allRecipes, level }) => {
             </div>
             <Link 
               to={`/recipe/${recipe.id}`}
-              className="text-carbon-gray-30 hover:text-white transition-colors"
+              className="text-stone-300 hover:text-kitchen-primary transition-colors p-1"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={20} />
             </Link>
           </div>
         </div>
@@ -88,14 +88,15 @@ export const ForkTree: React.FC<ForkTreeProps> = ({ currentRecipeId, allRecipes 
 
   if (children.length === 0) {
     return (
-      <div className="border border-dashed border-carbon-gray-80 rounded-lg p-12 text-center">
-        <p className="text-carbon-gray-30">No forks yet. Be the first to fork this recipe!</p>
+      <div className="border-2 border-dashed border-stone-200 rounded-3xl p-16 text-center bg-stone-50/30">
+        <GitFork size={40} className="mx-auto text-stone-200 mb-4" />
+        <p className="text-kitchen-muted font-medium">No tweaks yet. Be the first to tweak this recipe!</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {children.map(child => (
         <TreeNode 
           key={child.id} 

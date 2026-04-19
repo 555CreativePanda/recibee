@@ -31,44 +31,44 @@ export class ErrorBoundary extends React.Component<Props, State> {
     const { children } = this.props;
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-carbon-gray-100 flex items-center justify-center p-6">
-          <div className="bg-carbon-gray-90 border border-carbon-gray-80 p-8 max-w-md w-full shadow-2xl">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-red-900/20 rounded-full">
-                <AlertTriangle className="text-red-500" size={32} />
+        <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+          <div className="bg-white border border-kitchen-border p-10 max-w-md w-full rounded-3xl shadow-2xl">
+            <div className="flex items-center gap-5 mb-8">
+              <div className="p-4 bg-red-50 rounded-2xl">
+                <AlertTriangle className="text-red-500" size={36} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white uppercase tracking-tight">System Error</h1>
-                <p className="text-xs font-mono text-carbon-gray-40 uppercase tracking-widest">Error Code: 0x500</p>
+                <h1 className="text-2xl font-serif font-bold text-kitchen-text tracking-tight">Kitchen Mishap</h1>
+                <p className="text-[10px] font-bold text-kitchen-muted uppercase tracking-widest mt-1">Error Code: 0x500</p>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="bg-carbon-gray-100 p-4 border-l-2 border-red-500">
-                <p className="text-sm text-carbon-gray-30 leading-relaxed">
-                  An unexpected error has occurred in the application repository. The system state has been preserved for diagnostic purposes.
+            <div className="space-y-8">
+              <div className="bg-stone-50 p-5 rounded-2xl border-l-4 border-red-500">
+                <p className="text-sm text-kitchen-muted leading-relaxed font-medium">
+                  Something went wrong in the kitchen. We've preserved the current state so you don't lose your progress.
                 </p>
               </div>
 
               {this.state.error && (
-                <div className="bg-black/40 p-3 rounded font-mono text-[10px] text-red-400 overflow-auto max-h-32">
+                <div className="bg-stone-50 p-4 rounded-xl border border-kitchen-border font-mono text-[10px] text-red-600 overflow-auto max-h-32">
                   {this.state.error.toString()}
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3 pt-4">
+              <div className="grid grid-cols-2 gap-4 pt-4">
                 <button
                   onClick={() => window.location.reload()}
-                  className="flex items-center justify-center gap-2 bg-carbon-gray-80 hover:bg-carbon-gray-70 text-white px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all"
+                  className="flex items-center justify-center gap-2 bg-stone-100 hover:bg-stone-200 text-kitchen-text px-4 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95"
                 >
-                  <RefreshCw size={14} />
+                  <RefreshCw size={16} />
                   Reload
                 </button>
                 <button
                   onClick={() => window.location.href = '/'}
-                  className="flex items-center justify-center gap-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all"
+                  className="flex items-center justify-center gap-2 bg-kitchen-primary hover:bg-orange-700 text-white px-4 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-100 active:scale-95"
                 >
-                  <Home size={14} />
+                  <Home size={16} />
                   Home
                 </button>
               </div>

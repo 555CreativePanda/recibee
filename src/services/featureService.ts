@@ -72,6 +72,29 @@ export const createFeatureRequest = async (title: string, description: string, u
   }
 };
 
+export const getUserVotesForFeatures = async (featureIds: string[], userId: string) => {
+  if (featureIds.length === 0) return {};
+  const path = 'feature_votes';
+  try {
+    // Firestore 'in' query supports up to 30 items
+    const q = query(
+      collection(db, path),
+      where('user_id', '==', userId),
+      where('feature_id', 'in', featureIds.slice(0, 30))
+    );
+    const snapshot = await getDocs(q);
+    const votes: Record<string, FeatureVote> = {};
+    snapshot.forEach(doc => {
+      const data = doc.data() as FeatureVote;
+      votes[data.feature_id] = data;
+    });
+    return votes;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+    throw error;
+  }
+};
+
 export const getUserVote = async (featureId: string, userId: string) => {
   const voteId = `${userId}_${featureId}`;
   const path = `feature_votes/${voteId}`;

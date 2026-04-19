@@ -108,26 +108,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
 
         setError(
           <div className="space-y-4 text-left">
-            <div className="flex items-center gap-2 text-red-400 font-bold">
+            <div className="flex items-center gap-2 text-red-500 font-bold">
               <AlertCircle size={18} />
               <span>Authentication Blocked</span>
             </div>
             
-            <p className="text-xs leading-relaxed text-carbon-gray-30">
+            <p className="text-xs leading-relaxed text-kitchen-muted">
               {isIframe 
                 ? "This error usually occurs because the preview iframe restricts cross-origin communication."
                 : "The authentication is still failing. This usually points to a configuration issue in your Firebase Console."}
             </p>
 
             {isIframe && (
-              <div className="space-y-3 bg-carbon-gray-100/50 p-4 border border-white/10 rounded-lg">
+              <div className="space-y-3 bg-stone-50 p-4 border border-kitchen-border rounded-2xl">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] uppercase tracking-widest text-carbon-blue-60 font-bold">Recommended Solution:</p>
-                  <span className="bg-carbon-blue-60/20 text-carbon-blue-60 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter">Iframe Bypass</span>
+                  <p className="text-[10px] uppercase tracking-widest text-kitchen-primary font-bold">Recommended Solution:</p>
+                  <span className="bg-orange-100 text-kitchen-primary text-[8px] px-2 py-1 rounded-lg font-bold uppercase tracking-wider">Iframe Bypass</span>
                 </div>
                 <button 
                   onClick={() => window.open(window.location.href, '_blank')}
-                  className="w-full bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white py-3 text-sm font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg group"
+                  className="w-full bg-kitchen-primary hover:bg-orange-700 text-white py-3 rounded-xl text-sm font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg group"
                 >
                   <Globe size={16} className="group-hover:rotate-12 transition-transform" />
                   Open in New Tab to Login
@@ -135,40 +135,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
               </div>
             )}
 
-            <div className="space-y-3 pt-3 border-t border-carbon-gray-80">
-              <p className="text-[10px] uppercase tracking-widest text-carbon-gray-40 font-mono">Required Firebase Setup:</p>
+            <div className="space-y-3 pt-3 border-t border-kitchen-border">
+              <p className="text-[10px] uppercase tracking-widest text-kitchen-muted font-bold">Required Firebase Setup:</p>
               
-              <div className="bg-black/20 p-3 rounded border border-white/5 space-y-2">
+              <div className="bg-stone-50 p-3 rounded-xl border border-kitchen-border space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <code className="text-[10px] text-white break-all font-mono bg-black/40 px-1.5 py-0.5 rounded">{hostname}</code>
+                  <code className="text-[10px] text-kitchen-text break-all font-mono bg-stone-100 px-1.5 py-0.5 rounded">{hostname}</code>
                   <button 
                     onClick={() => copyToClipboard(hostname)}
-                    className="shrink-0 p-1.5 hover:bg-white/10 rounded transition-colors text-carbon-gray-40 hover:text-white"
+                    className="shrink-0 p-1.5 hover:bg-stone-200 rounded-lg transition-colors text-stone-400 hover:text-kitchen-primary"
                     title="Copy Domain"
                   >
-                    {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                    {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                   </button>
                 </div>
-                <p className="text-[9px] text-carbon-gray-40 leading-tight">
-                  1. Go to <span className="text-white">Firebase Console</span> &gt; <span className="text-white">Authentication</span> &gt; <span className="text-white">Settings</span><br/>
-                  2. Add the domain above to <span className="text-white">"Authorized Domains"</span><br/>
-                  3. Ensure <span className="text-white">Google Provider</span> is enabled.
+                <p className="text-[9px] text-kitchen-muted leading-tight">
+                  1. Go to <span className="text-kitchen-text font-bold">Firebase Console</span> &gt; <span className="text-kitchen-text font-bold">Authentication</span> &gt; <span className="text-kitchen-text font-bold">Settings</span><br/>
+                  2. Add the domain above to <span className="text-kitchen-text font-bold">"Authorized Domains"</span><br/>
+                  3. Ensure <span className="text-kitchen-text font-bold">Google Provider</span> is enabled.
                 </p>
               </div>
 
               <div className="pt-2">
                 <button 
                   onClick={() => setShowDebug(!showDebug)}
-                  className="text-[9px] text-carbon-gray-50 hover:text-white underline underline-offset-2 uppercase tracking-widest"
+                  className="text-[9px] text-stone-400 hover:text-kitchen-primary underline underline-offset-2 uppercase tracking-widest font-bold"
                 >
                   {showDebug ? 'Hide Technical Details' : 'Show Technical Details'}
                 </button>
                 
                 {showDebug && (
-                  <div className="mt-3 p-3 bg-black/40 rounded border border-white/5 font-mono text-[9px] text-carbon-gray-30 overflow-x-auto">
-                    <p className="text-white mb-1">RAW ERROR:</p>
+                  <div className="mt-3 p-3 bg-stone-50 rounded-xl border border-kitchen-border font-mono text-[9px] text-kitchen-muted overflow-x-auto">
+                    <p className="text-kitchen-text font-bold mb-1">RAW ERROR:</p>
                     <pre className="whitespace-pre-wrap">{safeStringify(rawError)}</pre>
-                    <p className="text-white mt-3 mb-1">CONFIG STATE:</p>
+                    <p className="text-kitchen-text font-bold mt-3 mb-1">CONFIG STATE:</p>
                     <p>Auth Ready: {auth ? 'YES' : 'NO'}</p>
                     <p>Provider: {googleProvider ? 'INITIALIZED' : 'MISSING'}</p>
                   </div>
@@ -257,35 +257,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/80 backdrop-blur-md p-4 pt-12 md:pt-24 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-stone-900/40 backdrop-blur-md p-4 pt-12 md:pt-24 overflow-y-auto">
       <motion.div
         initial={{ scale: 0.95, opacity: 0, y: -20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: -20 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-carbon-gray-90 border border-carbon-gray-80 w-full max-w-md overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] mb-12"
+        className="bg-white border border-kitchen-border w-full max-w-md overflow-hidden rounded-3xl shadow-2xl mb-12"
       >
         {/* Header */}
-        <div className="p-6 border-b border-carbon-gray-80 flex items-center justify-between bg-carbon-gray-100/30">
-          <div className="flex items-center gap-4">
-            <div className="bg-carbon-blue-60 p-2.5 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-              <LogIn size={22} className="text-white" />
+        <div className="p-8 border-b border-kitchen-border flex items-center justify-between bg-stone-50/50">
+          <div className="flex items-center gap-5">
+            <div className="bg-kitchen-primary p-3 rounded-2xl shadow-lg shadow-orange-100">
+              <LogIn size={24} className="text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold tracking-tight">
+              <h3 className="text-2xl font-serif font-bold tracking-tight text-kitchen-text">
                 {mode === 'login' && 'Welcome Back'}
                 {mode === 'signup' && 'Join ReciBee'}
                 {mode === 'forgot-password' && 'Reset Access'}
               </h3>
-              <p className="text-[10px] text-carbon-gray-30 uppercase tracking-[0.2em] mt-0.5">
-                {mode === 'login' && (initialAction ? `Required to ${initialAction}` : 'Sign in to your repository')}
+              <p className="text-[10px] text-kitchen-muted uppercase tracking-widest font-bold mt-1">
+                {mode === 'login' && (initialAction ? `Required to ${initialAction}` : 'Sign in to your recipe box')}
                 {mode === 'signup' && 'Create your culinary identity'}
                 {mode === 'forgot-password' && 'Recover your account credentials'}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-carbon-gray-30 hover:text-white transition-colors p-2 hover:bg-carbon-gray-80 rounded-full">
-            <X size={20} />
+          <button onClick={onClose} className="text-stone-400 hover:text-kitchen-primary transition-colors p-2 hover:bg-stone-100 rounded-full">
+            <X size={24} />
           </button>
         </div>
 
@@ -297,12 +297,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="bg-red-500/10 border border-red-500/20 p-4 flex items-start gap-3 text-red-400 text-sm"
+                className="bg-red-50 border border-red-100 p-5 rounded-2xl flex items-start gap-4 text-red-600 text-sm"
               >
                 {typeof error === 'string' ? (
                   <>
-                    <AlertCircle size={18} className="shrink-0 mt-0.5" />
-                    <div className="leading-relaxed flex-1">{error}</div>
+                    <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                    <div className="leading-relaxed flex-1 font-medium">{error}</div>
                   </>
                 ) : (
                   <div className="flex-1">{error}</div>
@@ -315,28 +315,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="bg-green-500/10 border border-green-500/20 p-4 flex items-start gap-3 text-green-400 text-sm"
+                className="bg-green-50 border border-green-100 p-5 rounded-2xl flex items-start gap-4 text-green-600 text-sm"
               >
-                <CheckCircle2 size={18} className="shrink-0 mt-0.5" />
-                <p className="leading-relaxed">{success}</p>
+                <CheckCircle2 size={20} className="shrink-0 mt-0.5" />
+                <p className="leading-relaxed font-medium">{success}</p>
               </motion.div>
             )}
           </AnimatePresence>
 
           {mode === 'forgot-password' ? (
-            <div className="space-y-6">
+            <div className="space-y-8">
               <button 
                 onClick={() => setMode('login')}
-                className="flex items-center gap-2 text-xs text-carbon-gray-30 hover:text-white transition-colors group"
+                className="flex items-center gap-2 text-xs font-bold text-kitchen-muted hover:text-kitchen-primary transition-colors group uppercase tracking-widest"
               >
-                <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                 Back to Login
               </button>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-carbon-gray-30 uppercase tracking-[0.2em]">Email Address</label>
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-kitchen-muted uppercase tracking-widest">Email Address</label>
                   <div className="relative group">
-                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-carbon-gray-30 group-focus-within:text-carbon-blue-60 transition-colors" />
+                    <Mail size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-kitchen-primary transition-colors" />
                     <input
                       ref={firstInputRef}
                       type="email"
@@ -344,14 +344,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@example.com"
-                      className="w-full bg-carbon-gray-100 border border-carbon-gray-80 pl-12 pr-4 py-3 text-sm outline-none focus:border-carbon-blue-60 transition-all placeholder:text-carbon-gray-80"
+                      className="w-full bg-stone-50 border border-kitchen-border rounded-2xl pl-12 pr-4 py-4 text-sm text-kitchen-text outline-none focus:border-kitchen-primary focus:ring-4 focus:ring-orange-50 transition-all placeholder:text-stone-300"
                     />
                   </div>
                 </div>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white py-3.5 text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-[0_4px_15px_rgba(59,130,246,0.25)]"
+                  className="w-full bg-kitchen-primary hover:bg-orange-700 text-white py-5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-lg shadow-orange-100 uppercase tracking-widest"
                 >
                   {isLoading ? <Loader2 size={20} className="animate-spin" /> : 'Send Reset Link'}
                 </button>
@@ -359,13 +359,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
             </div>
           ) : (
             <>
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <button
                   onClick={handleGoogleLogin}
                   disabled={isLoading}
-                  className="w-full border border-carbon-gray-80 hover:bg-carbon-gray-80/50 hover:border-white/20 text-white py-3.5 text-sm font-medium transition-all flex items-center justify-center gap-3 backdrop-blur-sm shadow-[0_4px_15px_rgba(0,0,0,0.1)]"
+                  className="w-full bg-white border border-kitchen-border hover:bg-stone-50 text-kitchen-text py-4 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-4 shadow-sm hover:shadow-md active:scale-95"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path
                       fill="currentColor"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -388,19 +388,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
 
                 <div className="relative py-2">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-carbon-gray-80"></div>
+                    <div className="w-full border-t border-kitchen-border"></div>
                   </div>
-                  <div className="relative flex justify-center text-[10px] uppercase tracking-[0.3em]">
-                    <span className="bg-carbon-gray-90 px-4 text-carbon-gray-30 font-mono">Authentication Bridge</span>
+                  <div className="relative flex justify-center">
+                    <span className="bg-white px-6 text-[10px] font-bold uppercase tracking-[0.3em] text-stone-300">Authentication Bridge</span>
                   </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {mode === 'signup' && (
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-mono text-carbon-gray-30 uppercase tracking-[0.2em]">Full Name</label>
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-bold text-kitchen-muted uppercase tracking-widest">Full Name</label>
                       <div className="relative group">
-                        <UserIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-carbon-gray-30 group-focus-within:text-carbon-blue-60 transition-colors" />
+                        <UserIcon size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-kitchen-primary transition-colors" />
                         <input
                           ref={firstInputRef}
                           type="text"
@@ -408,16 +408,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="Linus Torvalds"
-                          className="w-full bg-carbon-gray-100 border border-carbon-gray-80 pl-12 pr-4 py-3 text-sm outline-none focus:border-carbon-blue-60 transition-all placeholder:text-carbon-gray-80"
+                          className="w-full bg-stone-50 border border-kitchen-border rounded-2xl pl-12 pr-4 py-4 text-sm text-kitchen-text outline-none focus:border-kitchen-primary focus:ring-4 focus:ring-orange-50 transition-all placeholder:text-stone-300"
                         />
                       </div>
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-mono text-carbon-gray-30 uppercase tracking-[0.2em]">Email Address</label>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-kitchen-muted uppercase tracking-widest">Email Address</label>
                     <div className="relative group">
-                      <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-carbon-gray-30 group-focus-within:text-carbon-blue-60 transition-colors" />
+                      <Mail size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-kitchen-primary transition-colors" />
                       <input
                         ref={mode === 'login' ? firstInputRef : undefined}
                         type="email"
@@ -425,46 +425,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="name@example.com"
-                        className="w-full bg-carbon-gray-100 border border-carbon-gray-80 pl-12 pr-4 py-3 text-sm outline-none focus:border-carbon-blue-60 transition-all placeholder:text-carbon-gray-80"
+                        className="w-full bg-stone-50 border border-kitchen-border rounded-2xl pl-12 pr-4 py-4 text-sm text-kitchen-text outline-none focus:border-kitchen-primary focus:ring-4 focus:ring-orange-50 transition-all placeholder:text-stone-300"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-mono text-carbon-gray-30 uppercase tracking-[0.2em]">Password</label>
+                      <label className="text-[10px] font-bold text-kitchen-muted uppercase tracking-widest">Password</label>
                       {mode === 'login' && (
                         <button
                           type="button"
                           onClick={() => setMode('forgot-password')}
-                          className="text-[10px] text-carbon-blue-60 hover:text-white transition-colors uppercase tracking-widest"
+                          className="text-[10px] text-kitchen-primary hover:text-orange-700 transition-colors font-bold uppercase tracking-widest"
                         >
                           Forgot?
                         </button>
                       )}
                     </div>
                     <div className="relative group">
-                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-carbon-gray-30 group-focus-within:text-carbon-blue-60 transition-colors" />
+                      <Lock size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-kitchen-primary transition-colors" />
                       <input
                         type={showPassword ? "text" : "password"}
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full bg-carbon-gray-100 border border-carbon-gray-80 pl-12 pr-12 py-3 text-sm outline-none focus:border-carbon-blue-60 transition-all placeholder:text-carbon-gray-80"
+                        className="w-full bg-stone-50 border border-kitchen-border rounded-2xl pl-12 pr-12 py-4 text-sm text-kitchen-text outline-none focus:border-kitchen-primary focus:ring-4 focus:ring-orange-50 transition-all placeholder:text-stone-300"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-carbon-gray-30 hover:text-white transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-kitchen-primary transition-colors"
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
                     
                     {/* Password Strength Indicator for Signup */}
                     {mode === 'signup' && password.length > 0 && (
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-2">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 pt-3">
                         {[
                           { key: 'length', label: '8+ Characters' },
                           { key: 'uppercase', label: 'Uppercase' },
@@ -474,12 +474,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                         ].map((req) => (
                           <div key={req.key} className="flex items-center gap-2">
                             <div className={cn(
-                              "w-1.5 h-1.5 rounded-full transition-colors",
-                              passwordRequirements[req.key as keyof typeof passwordRequirements] ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" : "bg-carbon-gray-80"
+                              "w-2 h-2 rounded-full transition-colors",
+                              passwordRequirements[req.key as keyof typeof passwordRequirements] ? "bg-green-500 shadow-lg shadow-green-100" : "bg-stone-200"
                             )} />
                             <span className={cn(
-                              "text-[10px] font-mono tracking-wider",
-                              passwordRequirements[req.key as keyof typeof passwordRequirements] ? "text-green-500" : "text-carbon-gray-30"
+                              "text-[10px] font-bold tracking-wider uppercase",
+                              passwordRequirements[req.key as keyof typeof passwordRequirements] ? "text-green-600" : "text-stone-400"
                             )}>
                               {req.label}
                             </span>
@@ -490,10 +490,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                   </div>
 
                   {mode === 'signup' && (
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-mono text-carbon-gray-30 uppercase tracking-[0.2em]">Confirm Password</label>
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-bold text-kitchen-muted uppercase tracking-widest">Confirm Password</label>
                       <div className="relative group">
-                        <ShieldCheck size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-carbon-gray-30 group-focus-within:text-carbon-blue-60 transition-colors" />
+                        <ShieldCheck size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-kitchen-primary transition-colors" />
                         <input
                           type={showPassword ? "text" : "password"}
                           required
@@ -501,13 +501,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="••••••••"
                           className={cn(
-                            "w-full bg-carbon-gray-100 border pl-12 pr-4 py-3 text-sm outline-none transition-all placeholder:text-carbon-gray-80",
-                            confirmPassword && password !== confirmPassword ? "border-red-500/50 focus:border-red-500" : "border-carbon-gray-80 focus:border-carbon-blue-60"
+                            "w-full bg-stone-50 border rounded-2xl pl-12 pr-4 py-4 text-sm text-kitchen-text outline-none transition-all placeholder:text-stone-300",
+                            confirmPassword && password !== confirmPassword 
+                              ? "border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-50" 
+                              : "border-kitchen-border focus:border-kitchen-primary focus:ring-4 focus:ring-orange-50"
                           )}
                         />
                       </div>
                       {confirmPassword && password !== confirmPassword && (
-                        <p className="text-[10px] text-red-400 font-mono italic">Passwords do not match</p>
+                        <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider italic">Passwords do not match</p>
                       )}
                     </div>
                   )}
@@ -515,22 +517,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                   {mode === 'login' && (
                     <label className="flex items-center gap-3 cursor-pointer group w-fit">
                       <div className={cn(
-                        "w-4 h-4 border border-carbon-gray-80 flex items-center justify-center transition-all",
-                        rememberMe ? "bg-carbon-blue-60 border-carbon-blue-60 shadow-[0_0_8px_rgba(59,130,246,0.4)]" : "group-hover:border-carbon-gray-30"
+                        "w-5 h-5 border-2 border-kitchen-border rounded-lg flex items-center justify-center transition-all",
+                        rememberMe ? "bg-kitchen-primary border-kitchen-primary shadow-lg shadow-orange-100" : "group-hover:border-stone-400"
                       )} onClick={() => setRememberMe(!rememberMe)}>
-                        {rememberMe && <div className="w-1.5 h-1.5 bg-white" />}
+                        {rememberMe && <div className="w-2 h-2 bg-white rounded-sm" />}
                       </div>
-                      <span className="text-xs text-carbon-gray-30 group-hover:text-white transition-colors">Remember me</span>
+                      <span className="text-xs font-bold text-kitchen-muted group-hover:text-kitchen-text transition-colors uppercase tracking-widest">Remember me</span>
                     </label>
                   )}
 
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white py-4 text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-[0_4px_20px_rgba(59,130,246,0.25)] hover:shadow-[0_4px_25px_rgba(59,130,246,0.4)] active:scale-[0.98]"
+                    className="w-full bg-kitchen-primary hover:bg-orange-700 text-white py-5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-lg shadow-orange-100 uppercase tracking-widest active:scale-95"
                   >
                     {isLoading ? (
-                      <Loader2 size={20} className="animate-spin" />
+                      <Loader2 size={24} className="animate-spin" />
                     ) : (
                       <>
                         {mode === 'login' && 'Login'}
@@ -540,15 +542,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialAc
                   </button>
                 </form>
 
-                <div className="text-center pt-2">
+                <div className="text-center pt-4">
                   <button
                     onClick={() => {
                       setMode(mode === 'login' ? 'signup' : 'login');
                       resetForm();
                     }}
-                    className="text-xs text-carbon-gray-30 hover:text-carbon-blue-60 transition-colors font-mono tracking-tight"
+                    className="text-xs font-bold text-kitchen-muted hover:text-kitchen-primary transition-colors uppercase tracking-widest"
                   >
-                    {mode === 'login' ? "New to the repository? Create Account" : "Existing user? Return to Login"}
+                    {mode === 'login' ? "New to ReciBee? Create Account" : "Existing user? Return to Login"}
                   </button>
                 </div>
               </div>

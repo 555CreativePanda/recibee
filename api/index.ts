@@ -229,22 +229,91 @@ app.post('/api/import', async (req, res) => {
   if (!url) return res.status(400).json({ error: 'URL is required' });
 
   try {
-    const headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-    };
+    const userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+    ];
 
-    let html: string;
+    const getHeaders = (idx: number) => ({
+      'User-Agent': userAgents[idx % userAgents.length],
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+      'Referer': 'https://www.google.com/',
+    });
+
+    let html: string = '';
+    let usedProxy = false;
+
     try {
-      const response = await axios.get(url, { headers, timeout: 5000 });
+      // Try direct fetch first
+      const response = await axios.get(url, { headers: getHeaders(0), timeout: 8000 });
       html = response.data;
-    } catch (e) {
-      // Try proxy if direct fetch fails
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-      const response = await axios.get(proxyUrl, { timeout: 5000 });
-      html = response.data;
+    } catch (e: any) {
+      const statusCode = e.response?.status;
+      
+      // If we hit a challenge (402, 403) from a known protected site, don't waste time on proxies
+      if ((statusCode === 402 || statusCode === 403) && (url.includes('seriouseats.com') || url.includes('nytimes.com') || url.includes('bonappetit.com'))) {
+        console.info(`Direct access blocked by protection on ${url}. Handing off to AI immediately.`);
+        return res.json({ 
+          needsAI: true, 
+          rawText: '', 
+          useUrlContext: true,
+          url: url,
+          title: 'Importing via AI...' 
+        });
+      }
+
+      console.info(`Direct fetch for ${url} skipped partially: ${e.message}. Trying primary proxy...`);
+      try {
+        // Try AllOrigins proxy
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(proxyUrl, { headers: getHeaders(1), timeout: 12000 });
+        html = response.data;
+        usedProxy = true;
+      } catch (e2: any) {
+        console.info(`Primary proxy for ${url} unavailable. Trying secondary proxy...`);
+        try {
+          // Try corsproxy.io as secondary fallback
+          const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+          const response = await axios.get(proxyUrl, { headers: getHeaders(2), timeout: 12000 });
+          html = response.data;
+          usedProxy = true;
+        } catch (e3: any) {
+          console.info(`Secondary proxy for ${url} unavailable. Trying final fallback...`);
+          try {
+            // Final fallback: CodeTabs
+            const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+            const response = await axios.get(proxyUrl, { headers: getHeaders(0), timeout: 12000 });
+            html = response.data;
+            usedProxy = true;
+          } catch (e4: any) {
+            console.info(`All standard fetch attempts exhausted for ${url}. Reverting to AI URL Context.`);
+            
+            // If fetching fails completely, return a signal to the frontend to try Gemini's URL Context tool
+            return res.json({ 
+              needsAI: true, 
+              rawText: '', // No text fetched
+              useUrlContext: true,
+              url: url,
+              title: 'Attempting AI URL Import...' 
+            });
+          }
+        }
+      }
     }
 
-    if (!html) throw new Error('Failed to fetch website content');
+    if (!html || html.length < 200) {
+      throw new Error('Website returned empty or invalid content. It might be blocking automated access.');
+    }
+
+    // Check if we got a "challenge" or "blocked" page (common with Cloudflare)
+    if (html.includes('Cloudflare') && (html.includes('Verify you are human') || html.includes('Access denied'))) {
+      throw new Error('This site is protected by a human verification challenge (Cloudflare) which prevents automated importing. Please copy and paste the ingredients and steps manually.');
+    }
+
     const $ = cheerio.load(html);
     
     let recipeData: any = null;

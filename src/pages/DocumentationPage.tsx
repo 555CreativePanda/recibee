@@ -8,58 +8,58 @@ export function DocumentationPage() {
     {
       id: 'introduction',
       title: 'Introduction',
-      icon: <ChefHat className="text-carbon-blue-60" />,
-      content: 'ReciBee is a technical recipe repository designed for the modern kitchen. Inspired by version control systems like Git, it treats recipes as "source code" that can be imported, branched, and improved collaboratively.'
+      icon: <ChefHat className="text-kitchen-primary" />,
+      content: 'ReciBee is a digital kitchen notebook designed for the modern home cook. Inspired by the clarity of technical documentation, it treats recipes as living documents that can be imported, tweaked, and improved over time.'
     },
     {
       id: 'importing',
       title: 'Importing Recipes',
-      icon: <Download className="text-carbon-blue-60" />,
+      icon: <Download className="text-kitchen-primary" />,
       content: 'The core of ReciBee is its powerful import engine. Simply paste a URL from any food blog or recipe site. Our system strips away the ads, popups, and long-winded stories, extracting only the ingredients and steps into a clean, structured format.'
     },
     {
       id: 'forking',
-      title: 'Forking & Versioning',
-      icon: <GitBranch className="text-carbon-blue-60" />,
-      content: 'Found a recipe but want to make it your own? Use the "Fork" feature. This creates a personal copy of the recipe in your repository. You can then modify ingredients or steps while maintaining a link to the original "parent" recipe.'
+      title: 'Tweaking',
+      icon: <GitBranch className="text-kitchen-primary" />,
+      content: 'Found a recipe but want to make it your own? Use the "Tweak" feature. This creates a personal copy of the recipe in your notebook. You can then modify ingredients or steps while maintaining a link to the original "parent" recipe.'
     },
     {
       id: 'collaboration',
-      title: 'Social & Collaboration',
-      icon: <Star className="text-carbon-blue-60" />,
-      content: 'ReciBee is built for community. You can "Star" recipes to save them to your favorites, see how many times a recipe has been forked, and explore different "branches" of the same dish created by other chefs.'
+      title: 'Community & Favorites',
+      icon: <Star className="text-kitchen-primary" />,
+      content: 'ReciBee is built for community. You can "Like" recipes to save them to your favorites, see how many times a recipe has been tweaked, and explore different versions of the same dish created by other cooks.'
     },
     {
       id: 'search',
-      title: 'Advanced Search',
-      icon: <Search className="text-carbon-blue-60" />,
-      content: 'Our repository is fully searchable. Filter by title, ingredients, or ownership. Whether you are looking for your own creations or exploring the global database, finding the right recipe is instantaneous.'
+      title: 'Smart Search',
+      icon: <Search className="text-kitchen-primary" />,
+      content: 'Our notebook is fully searchable. Filter by title, ingredients, or ownership. Whether you are looking for your own creations or exploring the community database, finding the right recipe is instantaneous.'
     },
     {
       id: 'technical',
-      title: 'Technical Precision',
-      icon: <Code className="text-carbon-blue-60" />,
-      content: 'Recipes are stored with technical precision. Ingredients are broken down into items, amounts, and units, allowing for future features like automatic scaling and nutritional analysis.'
+      title: 'Kitchen Precision',
+      icon: <Code className="text-kitchen-primary" />,
+      content: 'Recipes are stored with precision. Ingredients are broken down into items, amounts, and units, allowing for future features like automatic scaling and nutritional analysis.'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-carbon-gray-100 text-white pb-20">
+    <div className="min-h-screen bg-kitchen-bg text-kitchen-text pb-20">
       <SEO 
         title="Documentation" 
-        description="Learn how to use ReciBee: The Git-inspired recipe repository. Explore features like importing, forking, and versioning."
+        description="Learn how to use ReciBee: The digital kitchen notebook. Explore features like importing, saving, and tweaking recipes."
       />
       
       {/* Header */}
-      <header className="bg-carbon-gray-90 border-b border-carbon-gray-80 px-6 py-4 sticky top-0 z-10">
+      <header className="bg-white border-b border-kitchen-border px-6 py-4 sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto max-w-5xl flex items-center justify-between">
           <Link to="/explore" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="bg-carbon-blue-60 p-1.5">
+            <div className="bg-kitchen-primary p-1.5 rounded-xl">
               <ChefHat size={20} className="text-white" />
             </div>
-            <h1 className="text-xl font-semibold tracking-tight">ReciBee<span className="text-carbon-blue-60">/docs</span></h1>
+            <h1 className="text-xl font-serif font-bold tracking-tight text-kitchen-text">ReciBee<span className="text-kitchen-primary font-sans ml-1 text-sm">/docs</span></h1>
           </Link>
-          <Link to="/" className="text-sm font-medium text-carbon-gray-30 hover:text-white transition-colors">
+          <Link to="/" className="text-sm font-bold text-kitchen-muted hover:text-kitchen-primary transition-colors uppercase tracking-widest">
             Back to Home
           </Link>
         </div>
@@ -72,9 +72,9 @@ export function DocumentationPage() {
           className="space-y-12"
         >
           <div className="space-y-4">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Documentation</h2>
-            <p className="text-carbon-gray-30 text-lg max-w-2xl">
-              Everything you need to know about managing your culinary repository with ReciBee.
+            <h2 className="text-4xl md:text-5xl font-serif font-bold tracking-tight text-kitchen-text">Documentation</h2>
+            <p className="text-kitchen-muted text-lg max-w-2xl">
+              Everything you need to know about managing your digital kitchen notebook with ReciBee.
             </p>
           </div>
 
@@ -85,15 +85,15 @@ export function DocumentationPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-carbon-gray-90 border border-carbon-gray-80 p-8 group hover:border-carbon-blue-60/50 transition-colors"
+                className="bg-white border border-kitchen-border p-8 rounded-2xl shadow-md group hover:border-kitchen-primary/50 transition-colors"
               >
                 <div className="flex items-start gap-6">
-                  <div className="p-3 bg-carbon-gray-100 border border-carbon-gray-80 group-hover:border-carbon-blue-60/30 transition-colors">
+                  <div className="p-3 bg-stone-50 border border-kitchen-border rounded-xl group-hover:border-kitchen-primary/30 transition-colors">
                     {section.icon}
                   </div>
                   <div className="space-y-3">
-                    <h3 className="text-2xl font-semibold tracking-tight">{section.title}</h3>
-                    <p className="text-carbon-gray-30 leading-relaxed">
+                    <h3 className="text-2xl font-serif font-bold tracking-tight text-kitchen-text">{section.title}</h3>
+                    <p className="text-kitchen-muted leading-relaxed">
                       {section.content}
                     </p>
                   </div>
@@ -102,40 +102,40 @@ export function DocumentationPage() {
             ))}
           </div>
 
-          <div className="bg-carbon-blue-60 p-10 text-center space-y-6">
-            <h3 className="text-3xl font-bold">Ready to start cooking?</h3>
-            <p className="text-carbon-blue-10 max-w-xl mx-auto">
-              Join the repository today and start building your personal library of culinary source code.
+          <div className="bg-kitchen-primary p-10 text-center space-y-6 rounded-3xl shadow-xl">
+            <h3 className="text-3xl font-serif font-bold text-white">Ready to start cooking?</h3>
+            <p className="text-orange-100 max-w-xl mx-auto">
+              Join the community today and start building your personal library of culinary favorites.
             </p>
             <div className="pt-4">
               <Link 
                 to="/explore" 
-                className="inline-flex items-center gap-2 bg-white text-carbon-blue-60 px-8 py-3 font-bold hover:scale-105 transition-transform"
+                className="inline-flex items-center gap-2 bg-white text-kitchen-primary px-8 py-3 rounded-2xl font-bold hover:scale-105 transition-transform shadow-lg"
               >
-                Open Repository
+                Open Recipes
                 <Zap size={18} />
               </Link>
             </div>
           </div>
 
-          <div className="pt-12 border-t border-carbon-gray-80">
-            <h4 className="text-sm font-mono text-carbon-gray-30 uppercase tracking-widest mb-6">Use Cases</h4>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <h5 className="font-semibold">The Meal Prepper</h5>
-                <p className="text-sm text-carbon-gray-30">Import 10 recipes in seconds, strip the fluff, and have a clean list of ingredients for your grocery run.</p>
+          <div className="pt-12 border-t border-kitchen-border">
+            <h4 className="text-sm font-bold text-kitchen-muted uppercase tracking-widest mb-6">Use Cases</h4>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-2 bg-white p-6 rounded-2xl border border-kitchen-border shadow-sm">
+                <h5 className="font-serif font-bold text-lg text-kitchen-text">The Meal Prepper</h5>
+                <p className="text-sm text-kitchen-muted leading-relaxed">Import 10 recipes in seconds, strip the fluff, and have a clean list of ingredients for your grocery run.</p>
               </div>
-              <div className="space-y-2">
-                <h5 className="font-semibold">The Experimental Chef</h5>
-                <p className="text-sm text-carbon-gray-30">Fork a classic recipe, swap an ingredient, and save your "v2.0" without losing the original source.</p>
+              <div className="space-y-2 bg-white p-6 rounded-2xl border border-kitchen-border shadow-sm">
+                <h5 className="font-serif font-bold text-lg text-kitchen-text">The Experimental Chef</h5>
+                <p className="text-sm text-kitchen-muted leading-relaxed">Save a copy of a classic recipe, swap an ingredient, and save your "v2.0" without losing the original source.</p>
               </div>
-              <div className="space-y-2">
-                <h5 className="font-semibold">The Developer</h5>
-                <p className="text-sm text-carbon-gray-30">Manage your recipes like you manage your code. Clean, structured, and version-controlled.</p>
+              <div className="space-y-2 bg-white p-6 rounded-2xl border border-kitchen-border shadow-sm">
+                <h5 className="font-serif font-bold text-lg text-kitchen-text">The Organized Cook</h5>
+                <p className="text-sm text-kitchen-muted leading-relaxed">Manage your recipes with structure. Clean, organized, and always accessible in your digital notebook.</p>
               </div>
-              <div className="space-y-2">
-                <h5 className="font-semibold">The Collaborative Family</h5>
-                <p className="text-sm text-carbon-gray-30">Share a repository with family members. See who made the best "fork" of Grandma's secret sauce.</p>
+              <div className="space-y-2 bg-white p-6 rounded-2xl border border-kitchen-border shadow-sm">
+                <h5 className="font-serif font-bold text-lg text-kitchen-text">The Collaborative Family</h5>
+                <p className="text-sm text-kitchen-muted leading-relaxed">Share a recipe box with family members. See who made the best tweak to Grandma's secret sauce.</p>
               </div>
             </div>
           </div>

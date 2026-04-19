@@ -19,18 +19,17 @@ import { FeatureRequestPage } from './pages/FeatureRequestPage';
 import { ScrollToTop } from './components/ScrollToTop';
 import { Footer } from './components/Footer';
 import { UserProfileModal } from './components/UserProfileModal';
-import { saveRecipe, forkRecipe } from './services/recipeService';
+import { saveRecipe, forkRecipe, clearRecipeCache, clearTabCache } from './services/recipeService';
 import { getUserProfile } from './services/userService';
 import { UserProfile } from './types';
 
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [connectionStatus, setConnectionStatus] = useState<'testing' | 'success' | 'error'>('testing');
+  const [connectionStatus, setConnectionStatus] = useState<'testing' | 'success' | 'error'>('success');
   const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'favorites'>('all');
   const [starredRecipeIds, setStarredRecipeIds] = useState<Set<string>>(new Set());
   const [user, setUser] = useState<User | null>(null);
@@ -49,8 +48,11 @@ function AppContent() {
   
   // Import Modal State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importTab, setImportTab] = useState<'url' | 'text'>('url');
   const [importUrl, setImportUrl] = useState('');
+  const [importText, setImportText] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string>('Analyzing...');
   const [importError, setImportError] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,14 +71,11 @@ function AppContent() {
       setIsAuthReady(true);
       if (currentUser) {
         try {
-          // Fetch full profile
-          const profile = await getUserProfile(currentUser.uid);
+          // Fetch full profile (uses cache if available)
+          let profile = await getUserProfile(currentUser.uid);
           setUserProfile(profile);
 
           // Only sync if data has changed or document doesn't exist
-          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-          const userData = userDoc.data();
-          
           const publicData = {
             uid: currentUser.uid,
             displayName: currentUser.displayName,
@@ -87,28 +86,25 @@ function AppContent() {
             email: currentUser.email
           };
 
-          const hasChanged = !userDoc.exists() || 
-              (userData && (
-                userData.displayName !== publicData.displayName || 
-                userData.photoURL !== publicData.photoURL
-              ));
+          const hasChanged = !profile || 
+              (profile.displayName !== publicData.displayName || 
+               profile.photoURL !== publicData.photoURL);
 
           if (hasChanged) {
             await setDoc(doc(db, 'users', currentUser.uid), {
               ...publicData,
               email: deleteField()
             }, { merge: true });
-          }
-
-          // Always sync email to private subcollection
-          if (currentUser.email) {
-            await setDoc(doc(db, 'users', currentUser.uid, 'private', 'data'), privateData, { merge: true });
-          }
-
-          if (hasChanged) {
+            
             // Refresh local profile after sync
-            const updatedProfile = await getUserProfile(currentUser.uid);
-            setUserProfile(updatedProfile);
+            profile = await getUserProfile(currentUser.uid, true);
+            setUserProfile(profile);
+          }
+
+          // Always sync email to private subcollection (this is a write, but we only do it if we have an email)
+          // To save reads, we could check if profile.email matches, but profile.email is already fetched
+          if (currentUser.email && profile?.email !== currentUser.email) {
+            await setDoc(doc(db, 'users', currentUser.uid, 'private', 'data'), privateData, { merge: true });
           }
         } catch (err) {
           console.error('Error syncing user:', err);
@@ -151,37 +147,6 @@ function AppContent() {
   }, [user]);
 
   useEffect(() => {
-    const recipesRef = collection(db, 'recipes');
-    const q = query(recipesRef, orderBy('created_at', 'desc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedRecipes = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          ...data,
-          id: doc.id,
-          created_at: data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString(),
-          updated_at: data.updated_at?.toDate?.()?.toISOString() || data.updated_at || data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString()
-        };
-      }) as Recipe[];
-      
-      // Ensure unique recipes by ID to avoid duplicate key errors
-      const uniqueRecipes = fetchedRecipes.filter((recipe, index, self) =>
-        index === self.findIndex((t) => t.id === recipe.id)
-      );
-      setRecipes(uniqueRecipes);
-      setIsLoading(false);
-      setConnectionStatus('success');
-    }, (error) => {
-      console.error('Firestore error:', error);
-      setConnectionStatus('error');
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
     if (editingRecipe) {
       window.scrollTo(0, 0);
     }
@@ -210,41 +175,65 @@ function AppContent() {
   };
 
   const handleImport = async () => {
-    if (!importUrl) return;
+    if (importTab === 'url' && !importUrl) return;
+    if (importTab === 'text' && !importText) return;
     if (!ensureAuth('import recipes')) return;
     
     setIsImporting(true);
+    setImportStatus('Contacting server...');
     setImportError(null);
 
-    // Normalize URL on client side too
-    let normalizedUrl = importUrl.trim();
-    if (!/^https?:\/\//i.test(normalizedUrl)) {
-      normalizedUrl = 'https://' + normalizedUrl;
-    }
-
     try {
-      const response = await fetch('/api/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: normalizedUrl })
-      });
+      let data: any = null;
+      let sourceUrl = null;
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response:', text);
-        throw new Error(`Server returned an unexpected response format. It might be experiencing high load or blocking the request.`);
+      if (importTab === 'url') {
+        // Normalize URL on client side too
+        let normalizedUrl = importUrl.trim();
+        if (!/^https?:\/\//i.test(normalizedUrl)) {
+          normalizedUrl = 'https://' + normalizedUrl;
+        }
+        sourceUrl = normalizedUrl;
+
+        const response = await fetch('/api/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: normalizedUrl })
+        });
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Non-JSON response:', text);
+          throw new Error(`Server returned an unexpected response format. It might be experiencing high load or blocking the request.`);
+        }
+
+        data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to import');
+      } else {
+        // Manual text import - skip backend and go straight to AI
+        data = { needsAI: true, rawText: importText, title: 'Imported from Text' };
       }
 
-      let data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to import');
-
-      // If standard extraction failed, use Gemini AI
+      // Use Gemini AI for extraction if needed
       if (data.needsAI) {
+        setImportStatus(data.useUrlContext ? 'Bypassing protection with Gemini AI...' : 'Extracting ingredients with AI...');
         try {
           const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+          
+          let contents = '';
+          let tools: any[] = [];
+          
+          if (data.useUrlContext) {
+            contents = `Extract the recipe from this URL: ${data.url}`;
+            tools = [{ urlContext: {} }];
+          } else {
+            contents = `Extract the recipe from the following text:\n\n${data.rawText}`;
+          }
+
           const prompt = `
-            Extract the recipe from the following text. 
+            ${contents}
+            
             Return ONLY a JSON object with this structure:
             {
               "title": "string",
@@ -260,14 +249,14 @@ function AppContent() {
             
             Note: "isHeader" in ingredients should be true if the item is a section title (e.g. "For the marinade").
             "isSubheading" in steps should be true if the text is a section title.
-            
-            Text:
-            ${data.rawText}
           `;
 
           const aiResponse = await ai.models.generateContent({
             model: "gemini-3-flash-preview",
             contents: prompt,
+            config: {
+              tools: tools.length > 0 ? tools : undefined
+            }
           });
 
           const text = aiResponse.text;
@@ -279,18 +268,18 @@ function AppContent() {
             throw new Error('AI failed to parse recipe data');
           }
         } catch (aiError: any) {
-          console.error('Frontend Gemini extraction failed:', aiError);
-          throw new Error('Could not extract recipe automatically. Please try a different URL or enter manually.');
+          console.error('Gemini extraction failed:', aiError);
+          throw new Error('Could not extract recipe automatically. Please try pasting the text differently or enter manually.');
         }
       }
 
       const newRecipe: Recipe = {
         id: 'temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9),
-        title: data.title,
-        ingredients: data.ingredients,
-        original_ingredients: [...data.ingredients],
-        steps: data.steps,
-        original_steps: [...data.steps],
+        title: data.title || 'Untitled Recipe',
+        ingredients: data.ingredients || [],
+        original_ingredients: [...(data.ingredients || [])],
+        steps: data.steps || [],
+        original_steps: [...(data.steps || [])],
         prep_time: data.prep_time || '',
         cook_time: data.cook_time || '',
         servings: data.servings || '',
@@ -301,13 +290,14 @@ function AppContent() {
         notes: data.notes || '',
         parent_id: null,
         user_id: user!.uid,
-        source_url: normalizedUrl,
+        source_url: sourceUrl,
         created_at: new Date().toISOString(),
       };
 
       setEditingRecipe(newRecipe);
       setIsImportModalOpen(false);
       setImportUrl('');
+      setImportText('');
       if (location.pathname !== '/explore') navigate('/explore');
     } catch (error: any) {
       setImportError(error.message);
@@ -318,7 +308,7 @@ function AppContent() {
 
   const handleFork = (recipe: Recipe) => {
     console.log('handleFork triggered in App.tsx for recipe:', recipe.id);
-    if (!ensureAuth('fork and modify recipes')) return;
+    if (!ensureAuth('save and tweak recipes')) return;
 
     if (!user) return;
 
@@ -338,12 +328,15 @@ function AppContent() {
       keywords: recipe.keywords ? [...recipe.keywords] : [],
       notes: recipe.notes || '',
       parent_id: recipe.id,
+      parent_title: recipe.title,
+      parent_user_id: recipe.user_id,
       user_id: user.uid,
       source_url: recipe.source_url || null,
       created_at: new Date().toISOString(),
     };
 
     setEditingRecipe(forkedRecipe);
+    clearTabCache();
     if (location.pathname !== '/explore') navigate('/explore');
   };
 
@@ -356,7 +349,7 @@ function AppContent() {
       if (!isNew && updatedRecipe.user_id !== user!.uid) {
         setNotification({
           title: 'Ownership Required',
-          message: 'You can only save changes to recipes you own. Please fork this recipe to make your own version.'
+          message: 'You can only save changes to recipes you own. Please save a copy of this recipe to make your own version.'
         });
         return;
       }
@@ -364,10 +357,14 @@ function AppContent() {
       const savedId = await saveRecipe(updatedRecipe, user!.uid);
       setEditingRecipe(null);
 
+      // Clear caches
+      clearRecipeCache(savedId);
+      clearTabCache();
+
       if (isNew) {
         setNotification({
           title: 'Recipe Saved',
-          message: updatedRecipe.parent_id ? 'Fork created successfully!' : 'New recipe created successfully!'
+          message: updatedRecipe.parent_id ? 'Copy created successfully!' : 'New recipe created successfully!'
         });
         // Navigate to the new recipe page
         navigate(`/recipe/${savedId}`);
@@ -398,11 +395,11 @@ function AppContent() {
   };
 
   const handleSeed = async () => {
-    if (!ensureAuth('seed the repository')) return;
+    if (!ensureAuth('seed the recipe box')) return;
     setIsLoading(true);
     try {
       const starterRecipe = {
-        title: 'Classic Carbonara.js',
+        title: 'Classic Carbonara',
         ingredients: [
           { item: 'Spaghetti', amount: '400', unit: 'g' },
           { item: 'Guanciale', amount: '150', unit: 'g' },
@@ -443,24 +440,24 @@ function AppContent() {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       {location.pathname !== '/' && location.pathname !== '/docs' && location.pathname !== '/api-docs' && location.pathname !== '/status' && location.pathname !== '/features' && (
-        <header className="bg-carbon-gray-90 border-b border-carbon-gray-80 px-4 py-3 lg:px-6 lg:py-4 sticky top-0 z-10">
+        <header className="bg-white border-b border-stone-200 px-4 py-3 lg:px-6 lg:py-4 sticky top-0 z-10 shadow-sm">
           <div className="container mx-auto max-w-5xl flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center justify-between w-full lg:w-auto">
               <Link to="/explore" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <div className="bg-carbon-blue-60 p-1.5">
-                  <ChefHat size={20} className="text-white" />
+                <div className="bg-orange-600 p-2 rounded-xl">
+                  <ChefHat size={24} className="text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <h1 className="text-xl font-semibold tracking-tight">ReciBee<span className="text-carbon-blue-60">/_</span></h1>
+                  <h1 className="text-2xl font-serif font-bold tracking-tight text-stone-900">ReciBee</h1>
                   <div className="flex items-center gap-1.5">
                     <div className={cn(
                       "w-1.5 h-1.5 rounded-full",
                       connectionStatus === 'success' ? "bg-green-500" : 
                       connectionStatus === 'error' ? "bg-red-500" : "bg-yellow-500 animate-pulse"
                     )} />
-                    <span className="text-[10px] uppercase font-mono text-carbon-gray-30">
-                      {connectionStatus === 'success' ? "DB Connected" : 
-                       connectionStatus === 'error' ? "DB Offline" : "Connecting..."}
+                    <span className="text-[10px] uppercase font-sans font-semibold text-stone-400">
+                      {connectionStatus === 'success' ? "Online" : 
+                       connectionStatus === 'error' ? "Offline" : "Connecting..."}
                     </span>
                   </div>
                 </div>
@@ -474,19 +471,19 @@ function AppContent() {
                       setIsImportModalOpen(true);
                     }
                   }}
-                  className="p-2 text-carbon-gray-30 hover:text-white transition-colors border border-carbon-gray-80"
+                  className="p-2 text-stone-500 hover:text-orange-600 transition-colors border border-stone-200 rounded-xl"
                   title="Import from URL"
                 >
                   <Download size={18} />
                 </button>
                 <button
                   onClick={handleCreate}
-                  className="p-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white transition-colors"
+                  className="p-2 bg-orange-600 hover:bg-orange-700 text-white transition-colors rounded-xl"
                   title="New Recipe"
                 >
                   <Plus size={18} />
                 </button>
-                <div className="w-[1px] h-6 bg-carbon-gray-80 mx-1" />
+                <div className="w-[1px] h-6 bg-stone-200 mx-1" />
                 {user ? (
                   <div className="flex items-center gap-2">
                     <button
@@ -499,18 +496,18 @@ function AppContent() {
                         <img 
                           src={userProfile?.photoURL || user.photoURL!} 
                           alt="" 
-                          className="w-7 h-7 rounded-full border border-carbon-gray-80 group-hover:border-carbon-blue-60 transition-colors" 
+                          className="w-8 h-8 rounded-full border border-stone-200 group-hover:border-orange-600 transition-colors" 
                           referrerPolicy="no-referrer" 
                         />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-carbon-gray-80 flex items-center justify-center group-hover:bg-carbon-gray-70 transition-colors">
-                          <UserIcon size={14} className="text-carbon-gray-30" />
+                        <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center group-hover:bg-stone-200 transition-colors">
+                          <UserIcon size={14} className="text-stone-400" />
                         </div>
                       )}
                     </button>
                     <button
                       onClick={handleLogout}
-                      className="p-2 text-carbon-gray-30 hover:text-white transition-colors"
+                      className="p-2 text-stone-500 hover:text-red-600 transition-colors"
                       title="Logout"
                     >
                       <LogOut size={18} />
@@ -519,7 +516,7 @@ function AppContent() {
                 ) : (
                   <button
                     onClick={handleLogin}
-                    className="p-2 text-carbon-blue-60 hover:text-carbon-blue-50 transition-colors"
+                    className="p-2 text-orange-600 hover:text-orange-700 transition-colors"
                     title="Login"
                   >
                     <LogIn size={18} />
@@ -530,13 +527,13 @@ function AppContent() {
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:flex-1 lg:max-w-2xl lg:mx-12">
               <div className="relative w-full">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-carbon-gray-30" />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                 <input
                   type="text"
-                  placeholder="Search recipes..."
+                  placeholder="Search your recipes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-carbon-gray-100 border border-carbon-gray-80 pl-10 pr-4 py-2 text-sm outline-none focus:border-carbon-blue-60 transition-colors"
+                  className="w-full bg-stone-50 border border-stone-200 pl-10 pr-4 py-2.5 text-sm rounded-2xl outline-none focus:border-orange-600 focus:ring-1 focus:ring-orange-600 transition-all"
                 />
               </div>
             </div>
@@ -553,21 +550,21 @@ function AppContent() {
                       <img 
                         src={userProfile?.photoURL || user.photoURL!} 
                         alt="" 
-                        className="w-8 h-8 rounded-full border border-carbon-gray-80 group-hover:border-carbon-blue-60 transition-colors" 
+                        className="w-9 h-9 rounded-full border border-stone-200 group-hover:border-orange-600 transition-colors" 
                         referrerPolicy="no-referrer" 
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-carbon-gray-80 flex items-center justify-center group-hover:bg-carbon-gray-70 transition-colors">
-                        <UserIcon size={16} className="text-carbon-gray-30" />
+                      <div className="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center group-hover:bg-stone-200 transition-colors">
+                        <UserIcon size={16} className="text-stone-400" />
                       </div>
                     )}
-                    <span className="text-sm font-medium hidden xl:inline text-carbon-gray-30 group-hover:text-white transition-colors">
+                    <span className="text-sm font-medium hidden xl:inline text-stone-600 group-hover:text-stone-900 transition-colors">
                       {userProfile?.displayName || user.displayName || user.email}
                     </span>
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 border border-carbon-gray-80 hover:bg-carbon-gray-80 text-white px-4 py-2 text-sm font-medium transition-colors"
+                    className="flex items-center gap-2 border border-stone-200 hover:bg-stone-50 text-stone-600 px-4 py-2 rounded-2xl text-sm font-medium transition-colors"
                   >
                     <LogOut size={16} />
                     Logout
@@ -576,27 +573,27 @@ function AppContent() {
               ) : (
                 <button
                   onClick={handleLogin}
-                  className="flex items-center gap-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white px-4 py-2 text-sm font-medium transition-colors"
+                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-medium transition-colors shadow-md hover:shadow-lg"
                 >
                   <LogIn size={16} />
                   Login
                 </button>
               )}
-              <div className="h-6 w-[1px] bg-carbon-gray-80 mx-2" />
+              <div className="h-6 w-[1px] bg-stone-200 mx-2" />
               <button
                 onClick={() => {
                   if (ensureAuth('import recipes')) {
                     setIsImportModalOpen(true);
                   }
                 }}
-                className="flex items-center gap-2 border border-carbon-gray-80 hover:bg-carbon-gray-80 text-white px-4 py-2 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 border border-stone-200 hover:bg-stone-50 text-stone-600 px-4 py-2 rounded-2xl text-sm font-medium transition-colors"
               >
                 <Download size={16} />
                 Import
               </button>
               <button
                 onClick={handleCreate}
-                className="flex items-center gap-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white px-4 py-2 text-sm font-medium transition-colors"
+                className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-medium transition-colors shadow-md hover:shadow-lg"
               >
                 <Plus size={16} />
                 New Recipe
@@ -621,23 +618,23 @@ function AppContent() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-carbon-gray-90 border border-carbon-gray-80 w-full max-w-md p-6 shadow-2xl"
+                className="bg-white border border-kitchen-border w-full max-w-md p-10 rounded-3xl shadow-2xl"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium">{notification.title}</h3>
-                  <button onClick={() => setNotification(null)} className="text-carbon-gray-30 hover:text-white">
-                    <X size={20} />
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-2xl font-serif font-bold text-kitchen-text">{notification.title}</h3>
+                  <button onClick={() => setNotification(null)} className="text-stone-300 hover:text-kitchen-primary transition-colors p-1">
+                    <X size={28} />
                   </button>
                 </div>
-                <div className="space-y-6">
-                  <p className="text-sm text-carbon-gray-30 leading-relaxed">
+                <div className="space-y-8">
+                  <p className="text-kitchen-muted leading-relaxed font-medium">
                     {notification.message}
                   </p>
                   <button
                     onClick={() => setNotification(null)}
-                    className="w-full bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white px-4 py-3 text-sm font-medium transition-colors"
+                    className="w-full bg-kitchen-primary hover:bg-orange-700 text-white px-6 py-4 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-orange-100 uppercase tracking-widest active:scale-95"
                   >
-                    Dismiss
+                    Got it
                   </button>
                 </div>
               </motion.div>
@@ -666,45 +663,107 @@ function AppContent() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-carbon-gray-90 border border-carbon-gray-80 w-full max-w-md p-6 shadow-2xl"
+                className="bg-white border border-kitchen-border w-full max-w-md p-10 rounded-3xl shadow-2xl"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium">Import from URL</h3>
-                  <button onClick={() => setIsImportModalOpen(false)} className="text-carbon-gray-30 hover:text-white">
-                    <X size={20} />
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-2xl font-serif font-bold text-kitchen-text">Import from URL</h3>
+                  <button onClick={() => setIsImportModalOpen(false)} className="text-stone-300 hover:text-kitchen-primary transition-colors p-1">
+                    <X size={28} />
                   </button>
                 </div>
                 
-                <div className="space-y-4">
-                  <p className="text-sm text-carbon-gray-30">
-                    Paste a recipe URL (e.g. from a food blog) to extract ingredients and steps automatically.
-                  </p>
-                  <input
-                    ref={importInputRef}
-                    autoFocus
-                    type="url"
-                    placeholder="https://example.com/recipe"
-                    value={importUrl}
-                    onChange={(e) => setImportUrl(e.target.value)}
-                    className="w-full bg-carbon-gray-100 border border-carbon-gray-80 p-3 text-sm outline-none focus:border-carbon-blue-60"
-                  />
-                  {importError && (
-                    <p className="text-xs text-red-500 font-mono">{importError}</p>
+                <div className="space-y-8">
+                  <div className="flex gap-4 border-b border-kitchen-border">
+                    <button
+                      onClick={() => setImportTab('url')}
+                      className={cn(
+                        "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
+                        importTab === 'url' ? "text-kitchen-primary" : "text-stone-400 hover:text-kitchen-muted"
+                      )}
+                    >
+                      URL Import
+                      {importTab === 'url' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-kitchen-primary" />}
+                    </button>
+                    <button
+                      onClick={() => setImportTab('text')}
+                      className={cn(
+                        "pb-3 text-xs font-bold uppercase tracking-widest transition-all relative",
+                        importTab === 'text' ? "text-kitchen-primary" : "text-stone-400 hover:text-kitchen-muted"
+                      )}
+                    >
+                      Paste Text
+                      {importTab === 'text' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-kitchen-primary" />}
+                    </button>
+                  </div>
+
+                  {importTab === 'url' ? (
+                    <div className="space-y-6">
+                      <p className="text-kitchen-muted font-medium text-sm leading-relaxed">
+                        Paste a recipe URL from any food blog. Note: Some sites with strong bot protection may block automated imports.
+                      </p>
+                      <div className="space-y-2">
+                        <input
+                          ref={importInputRef}
+                          autoFocus
+                          type="url"
+                          placeholder="https://example.com/best-pasta-ever"
+                          value={importUrl}
+                          onChange={(e) => setImportUrl(e.target.value)}
+                          className="w-full bg-stone-50 border border-kitchen-border p-5 rounded-2xl text-sm outline-none focus:border-kitchen-primary focus:ring-1 focus:ring-kitchen-primary transition-all font-medium"
+                        />
+                        {importError && (
+                          <div className="bg-red-50 border border-red-100 rounded-xl p-4 mt-2">
+                            <p className="text-[10px] text-red-600 font-bold uppercase tracking-widest mb-1">Import Error</p>
+                            <p className="text-xs text-red-600 leading-relaxed mb-3">{importError}</p>
+                            <button 
+                              onClick={() => {
+                                setImportTab('text');
+                                setImportError(null);
+                              }}
+                              className="text-[10px] font-bold text-red-700 uppercase tracking-widest bg-red-100 px-3 py-1.5 rounded-lg hover:bg-red-200 transition-colors"
+                            >
+                              Try "Paste Text" instead
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <p className="text-kitchen-muted font-medium text-sm leading-relaxed">
+                        Select all text on the recipe page (Ctrl+A), paste it here, and our AI will extract the ingredients and steps for you.
+                      </p>
+                      <div className="space-y-2">
+                        <textarea
+                          placeholder="Paste recipe text here..."
+                          value={importText}
+                          onChange={(e) => setImportText(e.target.value)}
+                          className="w-full h-48 bg-stone-50 border border-kitchen-border p-5 rounded-2xl text-sm outline-none focus:border-kitchen-primary focus:ring-1 focus:ring-kitchen-primary transition-all font-medium resize-none"
+                        />
+                        {importError && (
+                          <div className="bg-red-50 border border-red-100 rounded-xl p-4 mt-2">
+                            <p className="text-[10px] text-red-600 font-bold uppercase tracking-widest mb-1">Extraction Error</p>
+                            <p className="text-xs text-red-600 leading-relaxed">{importError}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
+
                   <button
                     onClick={handleImport}
-                    disabled={isImporting || !importUrl}
-                    className="w-full flex items-center justify-center gap-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-3 text-sm font-medium transition-colors"
+                    disabled={isImporting || (importTab === 'url' ? !importUrl : !importText)}
+                    className="w-full flex items-center justify-center gap-3 bg-kitchen-primary hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-5 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-orange-100 uppercase tracking-widest active:scale-95"
                   >
                     {isImporting ? (
                       <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Analyzing...
+                        <Loader2 size={20} className="animate-spin" />
+                        {importStatus}
                       </>
                     ) : (
                       <>
-                        <Download size={16} />
-                        Import Recipe
+                        <Download size={20} />
+                        {importTab === 'url' ? 'Import to My Recipes' : 'Extract Recipe'}
                       </>
                     )}
                   </button>
@@ -741,8 +800,6 @@ function AppContent() {
                   </motion.div>
                 ) : (
                   <HomePage
-                    recipes={recipes}
-                    isLoading={isLoading}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     activeTab={activeTab}

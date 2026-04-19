@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Recipe } from '../types';
 import { RecipeCard } from '../components/RecipeCard';
 import { cn } from '../lib/utils';
-import { Plus, Database, GitBranch, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Database, GitBranch, Filter, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { SEO } from '../components/SEO';
+import { getRecipesPaginated, getRecipesByIds, getTabCache, setTabCache } from '../services/recipeService';
 
 interface HomePageProps {
-  recipes: Recipe[];
-  isLoading: boolean;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   activeTab: 'all' | 'mine' | 'favorites';
@@ -24,8 +23,6 @@ interface HomePageProps {
 }
 
 export function HomePage({
-  recipes,
-  isLoading,
   searchQuery,
   setSearchQuery,
   activeTab,
@@ -39,17 +36,100 @@ export function HomePage({
   user,
   onUserClick
 }: HomePageProps) {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
+  const isInitialMount = useRef(true);
+
+  const loadRecipes = useCallback(async (reset = false) => {
+    try {
+      setIsLoading(true);
+      
+      // If favorites, use getRecipesByIds
+      if (activeTab === 'favorites') {
+        const ids = Array.from(starredRecipeIds);
+        if (ids.length === 0) {
+          setRecipes([]);
+          setHasMore(false);
+          return;
+        }
+        const result = await getRecipesByIds(ids);
+        setRecipes(result);
+        setHasMore(false); // No pagination for favorites yet
+        return;
+      }
+
+      const filters: any = {};
+      if (activeTab === 'mine' && user) {
+        filters.userId = user.uid;
+      }
+      
+      const result = await getRecipesPaginated(
+        ITEMS_PER_PAGE,
+        reset ? null : lastVisible,
+        filters
+      );
+
+      let updatedRecipes: Recipe[] = [];
+      if (reset) {
+        updatedRecipes = result.recipes;
+      } else {
+        // Avoid duplicates
+        setRecipes(prev => {
+          const newRecipes = result.recipes.filter(nr => !prev.some(pr => pr.id === nr.id));
+          updatedRecipes = [...prev, ...newRecipes];
+          return updatedRecipes;
+        });
+      }
+      
+      if (reset) setRecipes(updatedRecipes);
+      
+      setLastVisible(result.lastVisible);
+      setHasMore(result.hasMore);
+      
+      // Update tab cache
+      setTabCache(activeTab, {
+        recipes: reset ? result.recipes : updatedRecipes,
+        lastVisible: result.lastVisible,
+        hasMore: result.hasMore
+      });
+    } catch (error) {
+      console.error('Error loading recipes:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeTab, user?.uid, lastVisible, starredRecipeIds, recipes]);
+
+  useEffect(() => {
+    // Check cache first
+    const cached = getTabCache(activeTab);
+    if (cached && activeTab !== 'favorites') {
+      setRecipes(cached.recipes);
+      setLastVisible(cached.lastVisible);
+      setHasMore(cached.hasMore);
+      setIsLoading(false);
+      return;
+    }
+    
+    loadRecipes(true);
+  }, [activeTab, user?.uid]); // Use user?.uid for stability
 
   const filteredRecipes = recipes.filter(r => {
-    const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = 
+      r.title.toLowerCase().includes(searchLower) ||
+      r.cuisine?.toLowerCase().includes(searchLower) ||
+      r.keywords?.some(k => k.toLowerCase().includes(searchLower));
+      
     let matchesTab = true;
     if (activeTab === 'favorites') {
       matchesTab = starredRecipeIds.has(r.id);
-    } else if (activeTab === 'mine') {
-      matchesTab = user ? r.user_id === user.uid : false;
     }
+    // 'mine' is handled by server-side filter in loadRecipes
+    
     return matchesSearch && matchesTab;
   });
 
@@ -63,127 +143,117 @@ export function HomePage({
     setCurrentPage(1);
   }, [activeTab, searchQuery]);
 
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisible = 7;
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
-    if (totalPages <= maxVisible + 2) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      if (currentPage <= 4) {
-        for (let i = 1; i <= 7; i++) pages.push(i);
-        pages.push('...');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 3) {
-        pages.push(1);
-        pages.push('...');
-        for (let i = totalPages - 6; i <= totalPages; i++) pages.push(i);
-      } else {
-        pages.push(1);
-        pages.push('...');
-        for (let i = currentPage - 2; i <= currentPage + 2; i++) pages.push(i);
-        pages.push('...');
-        pages.push(totalPages);
-      }
+  const handleNext = async () => {
+    const isAtEndOfLocal = currentPage * ITEMS_PER_PAGE >= filteredRecipes.length;
+    
+    if (isAtEndOfLocal && hasMore) {
+      await loadRecipes();
     }
-    return pages;
+    
+    if (currentPage * ITEMS_PER_PAGE < filteredRecipes.length || (isAtEndOfLocal && hasMore)) {
+      setCurrentPage(prev => prev + 1);
+    }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <SEO 
         title="Explore Recipes" 
-        description="Browse the global ReciBee repository. Find, fork, and star the best recipes from around the world."
+        description="Browse the global ReciBee recipe box. Find, tweak, and star the best recipes from around the world."
       />
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 border-b border-carbon-gray-80 gap-4">
-        <div className="flex gap-4 md:gap-6 overflow-x-auto no-scrollbar -mb-[1px]">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 border-b border-kitchen-border gap-4">
+        <div className="flex gap-6 md:gap-8 overflow-x-auto no-scrollbar -mb-[1px]">
           <button
             onClick={() => setActiveTab('all')}
             className={cn(
-              "pb-4 text-sm font-medium transition-colors relative whitespace-nowrap",
-              activeTab === 'all' ? "text-white" : "text-carbon-gray-30 hover:text-white"
+              "pb-4 text-sm font-bold uppercase tracking-widest transition-all relative whitespace-nowrap",
+              activeTab === 'all' ? "text-kitchen-primary" : "text-kitchen-muted hover:text-kitchen-text"
             )}
           >
             All Recipes
             {activeTab === 'all' && (
-              <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-[2px] bg-carbon-blue-60" />
+              <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-kitchen-primary rounded-t-full" />
             )}
           </button>
           <button
             onClick={() => setActiveTab('mine')}
             className={cn(
-              "pb-4 text-sm font-medium transition-colors relative whitespace-nowrap",
-              activeTab === 'mine' ? "text-white" : "text-carbon-gray-30 hover:text-white"
+              "pb-4 text-sm font-bold uppercase tracking-widest transition-all relative whitespace-nowrap",
+              activeTab === 'mine' ? "text-kitchen-primary" : "text-kitchen-muted hover:text-kitchen-text"
             )}
           >
             My Recipes
             {activeTab === 'mine' && (
-              <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-[2px] bg-carbon-blue-60" />
+              <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-kitchen-primary rounded-t-full" />
             )}
           </button>
           <button
             onClick={() => setActiveTab('favorites')}
             className={cn(
-              "pb-4 text-sm font-medium transition-colors relative whitespace-nowrap",
-              activeTab === 'favorites' ? "text-white" : "text-carbon-gray-30 hover:text-white"
+              "pb-4 text-sm font-bold uppercase tracking-widest transition-all relative whitespace-nowrap",
+              activeTab === 'favorites' ? "text-kitchen-primary" : "text-kitchen-muted hover:text-kitchen-text"
             )}
           >
             Starred
             {activeTab === 'favorites' && (
-              <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-[2px] bg-carbon-blue-60" />
+              <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-kitchen-primary rounded-t-full" />
             )}
           </button>
         </div>
 
-        <div className="flex items-center gap-4 text-xs md:text-sm text-carbon-gray-30 pb-4">
-          <div className="flex items-center gap-1">
-            <GitBranch size={14} />
+        <div className="flex items-center gap-4 text-xs md:text-sm text-kitchen-muted font-bold uppercase tracking-widest pb-4">
+          <div className="flex items-center gap-2">
+            <GitBranch size={16} className="text-kitchen-primary" />
             <span>{recipes.length} recipes</span>
           </div>
-          <div className="h-4 w-[1px] bg-carbon-gray-80" />
-          <div className="flex items-center gap-1">
-            <Filter size={14} />
+          <div className="h-4 w-[1px] bg-kitchen-border" />
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-kitchen-primary" />
             <span>All branches</span>
           </div>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-8 h-8 border-2 border-carbon-blue-60 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-mono text-carbon-gray-30">Loading repository...</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-6">
+          <div className="w-10 h-10 border-4 border-kitchen-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-bold text-kitchen-muted uppercase tracking-widest">Opening recipes...</p>
         </div>
       ) : recipes.length === 0 ? (
-        <div className="border border-dashed border-carbon-gray-80 rounded-lg p-12 text-center space-y-4">
+        <div className="border-2 border-dashed border-stone-200 rounded-3xl p-16 text-center space-y-6 bg-stone-50/30">
           <div className="flex justify-center">
-            <Database size={48} className="text-carbon-gray-80" />
+            <Database size={64} className="text-stone-200" />
           </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-medium text-white">Repository is empty</h3>
-            <p className="text-carbon-gray-30 max-w-sm mx-auto">
+          <div className="space-y-3">
+            <h3 className="text-2xl font-serif font-bold text-kitchen-text">Recipes collection is empty</h3>
+            <p className="text-kitchen-muted max-w-sm mx-auto font-medium">
               Start by creating a new recipe, importing from a URL, or seed the database with a starter recipe.
             </p>
           </div>
-          <div className="flex items-center justify-center gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
             <button
               onClick={handleCreate}
-              className="flex items-center gap-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white px-6 py-2 text-sm font-medium transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-3 bg-kitchen-primary hover:bg-orange-700 text-white px-8 py-4 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-orange-100 uppercase tracking-widest"
             >
-              <Plus size={16} />
+              <Plus size={20} />
               New Recipe
             </button>
             <button
               onClick={handleSeed}
-              className="flex items-center gap-2 border border-carbon-gray-80 hover:bg-carbon-gray-80 text-white px-6 py-2 text-sm font-medium transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-3 bg-white border border-kitchen-border hover:bg-stone-50 text-kitchen-text px-8 py-4 rounded-2xl text-sm font-bold transition-all shadow-sm uppercase tracking-widest"
             >
-              <Database size={16} />
+              <Database size={20} />
               Seed Starter
             </button>
           </div>
         </div>
       ) : filteredRecipes.length > 0 ? (
-        <div className="space-y-8">
-          <div className="grid gap-4">
+        <div className="space-y-10">
+          <div className="grid gap-6">
             {paginatedRecipes.map(recipe => (
               <RecipeCard
                 key={recipe.id}
@@ -195,78 +265,70 @@ export function HomePage({
                 isStarred={starredRecipeIds.has(recipe.id)}
                 user={user}
                 onUserClick={onUserClick}
+                allRecipes={recipes}
               />
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-1 py-8 border-t border-carbon-gray-80">
+          {(totalPages > 1 || hasMore) && (
+            <div className="flex items-center justify-center gap-12 py-12 border-t border-kitchen-border">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-carbon-gray-30 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                disabled={currentPage === 1 || isLoading}
+                className="group flex items-center gap-3 px-8 py-4 bg-white border border-kitchen-border rounded-2xl text-sm font-bold text-kitchen-muted hover:text-kitchen-primary hover:border-kitchen-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all uppercase tracking-[0.2em]"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                 Previous
               </button>
 
-              <div className="flex items-center gap-1 mx-4">
-                {getPageNumbers().map((page, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => typeof page === 'number' && setCurrentPage(page)}
-                    disabled={page === '...'}
-                    className={cn(
-                      "min-w-[36px] h-9 flex items-center justify-center text-sm font-medium transition-all rounded-md",
-                      page === currentPage 
-                        ? "bg-carbon-blue-60 text-white shadow-lg shadow-carbon-blue-60/20" 
-                        : page === '...' 
-                          ? "text-carbon-gray-30 cursor-default" 
-                          : "text-carbon-gray-30 hover:text-white hover:bg-carbon-gray-80"
-                    )}
-                  >
-                    {page}
-                  </button>
-                ))}
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[10px] font-bold text-kitchen-muted uppercase tracking-[0.3em]">Page</span>
+                <span className="text-xl font-serif font-bold text-kitchen-text">{currentPage}</span>
               </div>
 
               <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-carbon-blue-60 hover:text-carbon-blue-70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                onClick={handleNext}
+                disabled={(currentPage >= totalPages && !hasMore) || isLoading}
+                className="group flex items-center gap-3 px-8 py-4 bg-white border border-kitchen-border rounded-2xl text-sm font-bold text-kitchen-primary hover:bg-kitchen-primary hover:text-white hover:border-kitchen-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all uppercase tracking-[0.2em] shadow-sm hover:shadow-lg hover:shadow-orange-100"
               >
-                Next
-                <ChevronRight size={16} />
+                {isLoading ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <>
+                    Next
+                    <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
               </button>
             </div>
           )}
         </div>
       ) : (
-        <div className="border border-dashed border-carbon-gray-80 rounded-lg p-12 text-center">
+        <div className="border-2 border-dashed border-stone-200 rounded-3xl p-16 text-center bg-stone-50/30">
           {searchQuery ? (
-            <>
-              <p className="text-carbon-gray-30">No recipes found matching "{searchQuery}".</p>
+            <div className="space-y-4">
+              <p className="text-kitchen-muted font-medium">No recipes found matching <span className="text-kitchen-text font-bold">"{searchQuery}"</span>.</p>
               <button 
                 onClick={() => setSearchQuery('')}
-                className="text-carbon-blue-60 hover:underline text-sm mt-2"
+                className="text-kitchen-primary font-bold hover:underline text-sm uppercase tracking-widest"
               >
                 Clear search
               </button>
-            </>
+            </div>
           ) : activeTab === 'mine' ? (
             <div className="space-y-4">
-              <p className="text-carbon-gray-30">You haven't created or forked any recipes yet.</p>
+              <p className="text-kitchen-muted font-medium">You haven't created or tweaked any recipes yet.</p>
               <button
                 onClick={handleCreate}
-                className="text-carbon-blue-60 hover:underline text-sm"
+                className="text-kitchen-primary font-bold hover:underline text-sm uppercase tracking-widest"
               >
                 Create your first recipe
               </button>
             </div>
           ) : activeTab === 'favorites' ? (
-            <p className="text-carbon-gray-30">You haven't starred any recipes yet.</p>
+            <p className="text-kitchen-muted font-medium">You haven't starred any recipes yet.</p>
           ) : (
-            <p className="text-carbon-gray-30">No recipes found.</p>
+            <p className="text-kitchen-muted font-medium">No recipes found.</p>
           )}
         </div>
       )}

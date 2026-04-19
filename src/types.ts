@@ -36,8 +36,12 @@ export interface Recipe {
   keywords?: string[] | null;
   notes?: string | null;
   parent_id: string | null;
+  parent_title?: string | null;
+  parent_user_id?: string | null;
   user_id: string;
   source_url?: string | null;
+  star_count?: number;
+  fork_count?: number;
   created_at: string;
   updated_at?: string;
 }
