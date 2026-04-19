@@ -41,7 +41,7 @@ export function HomePage({
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const ITEMS_PER_PAGE = 10;
   const isInitialMount = useRef(true);
 
@@ -224,7 +224,11 @@ export function HomePage({
         <div className="flex items-center gap-4 text-xs md:text-sm text-kitchen-muted font-bold uppercase tracking-widest pb-4">
           <div className="flex items-center gap-2">
             <GitBranch size={16} className="text-kitchen-primary" />
-            <span>{totalCount} {totalCount === 1 ? 'recipe' : 'recipes'}</span>
+            {totalCount === null ? (
+              <div className="w-8 h-4 bg-stone-100 animate-pulse rounded" />
+            ) : (
+              <span>{totalCount} {totalCount === 1 ? 'recipe' : 'recipes'}</span>
+            )}
           </div>
           <div className="h-4 w-[1px] bg-kitchen-border" />
           <div className="flex items-center gap-2">
