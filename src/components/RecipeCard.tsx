@@ -18,6 +18,7 @@ interface RecipeCardProps {
   user: any;
   expandedDefault?: boolean;
   onUserClick?: (uid: string) => void;
+  onDelete?: (recipeId: string) => void;
   allRecipes?: Recipe[];
 }
 
@@ -31,6 +32,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   user,
   expandedDefault = false,
   onUserClick,
+  onDelete,
   allRecipes = []
 }) => {
   const [isExpanded, setIsExpanded] = useState(expandedDefault);
@@ -216,6 +218,9 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'recipes', recipe.id));
+      if (onDelete) {
+        onDelete(recipe.id);
+      }
     } catch (error) {
       console.error('Error deleting recipe:', error);
     } finally {

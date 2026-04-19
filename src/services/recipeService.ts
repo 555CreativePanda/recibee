@@ -1,58 +1,25 @@
 import { db, auth as firebaseAuth } from '../lib/firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp, getDoc, increment, getDocs, query, orderBy, limit, startAfter, where, Timestamp, getCountFromServer } from 'firebase/firestore';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  doc, 
+  serverTimestamp, 
+  getDoc, 
+  increment, 
+  getDocs, 
+  query, 
+  orderBy, 
+  limit, 
+  startAfter, 
+  where, 
+  or,
+  Timestamp, 
+  getCountFromServer 
+} from 'firebase/firestore';
 import { Recipe } from '../types';
+import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { safeStringify } from '../lib/utils';
-
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId: string | undefined;
-    email: string | null | undefined;
-    emailVerified: boolean | undefined;
-    isAnonymous: boolean | undefined;
-    tenantId: string | null | undefined;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
-  }
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: firebaseAuth.currentUser?.uid,
-      email: firebaseAuth.currentUser?.email,
-      emailVerified: firebaseAuth.currentUser?.emailVerified,
-      isAnonymous: firebaseAuth.currentUser?.isAnonymous,
-      tenantId: firebaseAuth.currentUser?.tenantId,
-      providerInfo: firebaseAuth.currentUser?.providerData.map(provider => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        email: provider.email,
-        photoUrl: provider.photoURL
-      })) || []
-    },
-    operationType,
-    path
-  }
-  console.error('Firestore Error: ', safeStringify(errInfo));
-  throw new Error(safeStringify(errInfo));
-}
 
 export const saveRecipe = async (updatedRecipe: Recipe, userId: string) => {
   const isNew = updatedRecipe.id.startsWith('temp-');
@@ -64,7 +31,7 @@ export const saveRecipe = async (updatedRecipe: Recipe, userId: string) => {
       const docRef = await addDoc(collection(db, path), {
         ...recipeToInsert,
         user_id: userId,
-        is_public: true,
+        is_public: true, // Always public
         star_count: 0,
         fork_count: 0,
         created_at: serverTimestamp(),
@@ -104,6 +71,7 @@ export const saveRecipe = async (updatedRecipe: Recipe, userId: string) => {
         parent_title: updatedRecipe.parent_title || null,
         parent_user_id: updatedRecipe.parent_user_id || null,
         source_url: updatedRecipe.source_url || null,
+        is_public: true, // Force public on update
         updated_at: serverTimestamp()
       });
       return updatedRecipe.id;
@@ -133,6 +101,7 @@ export const forkRecipe = async (recipe: Recipe, userId: string) => {
       parent_title: recipe.title,
       parent_user_id: recipe.user_id,
       user_id: userId,
+      is_public: true, // Default to public
       source_url: recipe.source_url || null,
       created_at: serverTimestamp(),
       updated_at: serverTimestamp(),
@@ -189,6 +158,7 @@ export const getChildForks = async (parentId: string, limitCount = 5) => {
     const q = query(
       collection(db, 'recipes'),
       where('parent_id', '==', parentId),
+      where('is_public', '==', true),
       limit(limitCount)
     );
     const snapshot = await getDocs(q);
@@ -216,14 +186,44 @@ export const getRecipesCount = async (filters?: { userId?: string }) => {
     
     if (filters?.userId) {
       q = query(q, where('user_id', '==', filters.userId));
+    } else {
+      // Check for admin status to bypass filters
+      const userId = firebaseAuth.currentUser?.uid;
+      const userEmail = firebaseAuth.currentUser?.email;
+      let isAdminUser = false;
+      if (userId) {
+        if (userEmail === 'chandra.mayur@gmail.com') {
+          isAdminUser = true;
+        } else {
+          try {
+            const adminDoc = await getDoc(doc(db, 'admins', userId));
+            isAdminUser = adminDoc.exists();
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+
+      if (isAdminUser) {
+        console.log('[RecipeService] Admin detected - counting all recipes without filters');
+      } else if (userId) {
+        // "All" tab for logged in users: Show public recipes OR current user's own recipes
+        q = query(q, or(where('is_public', '==', true), where('user_id', '==', userId)));
+      } else {
+        // "All" tab for guests: Show all public recipes
+        // We MUST use the explicit filter for public recipes so the security rules don't reject the list query
+        console.log('[RecipeService] Guest detected - counting Public recipes');
+        q = query(q, where('is_public', '==', true));
+      }
     }
-    // No explicit is_public filter here to allow legacy recipes to be counted
-    // The security rules will filter accessibility
     
     const snapshot = await getCountFromServer(q);
-    return snapshot.data().count;
-  } catch (error) {
-    console.error('Error getting recipe count:', error);
+    const count = snapshot.data().count;
+    console.log(`[RecipeService] getRecipesCount for filters:`, filters, 'Result:', count);
+    return count;
+  } catch (error: any) {
+    console.error('[RecipeService] Error getting recipe count:', error);
+    handleFirestoreError(error, OperationType.COUNT, 'recipes');
     return 0;
   }
 };
@@ -247,16 +247,44 @@ export const getRecipesPaginated = async (
 
     if (filters?.userId) {
       q = query(q, where('user_id', '==', filters.userId));
+    } else {
+      // Check for admin status to bypass filters
+      const userId = firebaseAuth.currentUser?.uid;
+      const userEmail = firebaseAuth.currentUser?.email;
+      let isAdminUser = false;
+      if (userId) {
+        if (userEmail === 'chandra.mayur@gmail.com') {
+          isAdminUser = true;
+        } else {
+          try {
+            const adminDoc = await getDoc(doc(db, 'admins', userId));
+            isAdminUser = adminDoc.exists();
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+
+      if (isAdminUser) {
+        console.log('[RecipeService] Admin detected - fetching all recipes without filters');
+      } else if (userId) {
+        // "All" tab for logged in users: Show public recipes OR current user's own recipes
+        q = query(q, or(where('is_public', '==', true), where('user_id', '==', userId)));
+      } else {
+        // "All" tab for guests: Show all public recipes
+        // We MUST use the explicit filter for public recipes so the security rules don't reject the list query
+        console.log('[RecipeService] Guest detected - fetching Public recipes');
+        q = query(q, where('is_public', '==', true));
+      }
     }
-    // "All" tab:We remove the explicit is_public filter to allow legacy (pre-security-update) 
-    // recipes to show up. Security is still enforced by rules.
-    // If private recipes exist, guests will need a filtered query.
 
     if (lastVisibleDoc) {
       q = query(q, startAfter(lastVisibleDoc));
     }
 
+    console.log(`[RecipeService] Executing query for ${path}...`);
     const snapshot = await getDocs(q);
+    console.log(`[RecipeService] Found ${snapshot.docs.length} docs for ${path}`);
     const recipes = snapshot.docs.map(doc => {
       const data = doc.data();
       const recipe = {
@@ -274,10 +302,13 @@ export const getRecipesPaginated = async (
 
     return {
       recipes,
-      lastVisible: snapshot.docs[snapshot.docs.length - 1],
+      lastVisible: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
       hasMore: snapshot.docs.length === limitCount
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'failed-precondition') {
+      console.error('CRITICAL: This query requires multiple indexes. Check the index URL in the console.');
+    }
     handleFirestoreError(error, OperationType.LIST, path);
     throw error;
   }
@@ -299,25 +330,27 @@ export const getRecipesByIds = async (ids: string[]) => {
     
     if (missingIds.length === 0) return cached;
 
-    // Fetch missing in chunks of 30 (Firestore limit for 'in' query)
+    // Fetch missing individually to avoid list permission errors with 'in' queries
     const fetchedRecipes: Recipe[] = [...cached];
-    for (let i = 0; i < missingIds.length; i += 30) {
-      const chunk = missingIds.slice(i, i + 30);
-      const q = query(collection(db, path), where('__name__', 'in', chunk));
-      const snapshot = await getDocs(q);
-      snapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const recipe = {
-          ...data,
-          id: doc.id,
-          created_at: data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString(),
-          updated_at: data.updated_at?.toDate?.()?.toISOString() || data.updated_at || data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString()
-        } as Recipe;
-        
-        recipeCache[recipe.id] = { data: recipe, timestamp: Date.now() };
-        fetchedRecipes.push(recipe);
-      });
-    }
+    await Promise.all(missingIds.map(async (id) => {
+      try {
+        const docSnap = await getDoc(doc(db, 'recipes', id));
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const recipe = {
+            ...data,
+            id: docSnap.id,
+            created_at: data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString(),
+            updated_at: data.updated_at?.toDate?.()?.toISOString() || data.updated_at || data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString()
+          } as Recipe;
+          
+          recipeCache[recipe.id] = { data: recipe, timestamp: Date.now() };
+          fetchedRecipes.push(recipe);
+        }
+      } catch (e) {
+        console.warn(`Could not fetch starred recipe ${id}:`, e);
+      }
+    }));
 
     return fetchedRecipes;
   } catch (error) {
@@ -353,5 +386,43 @@ export const getRecipe = async (id: string): Promise<Recipe | null> => {
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, path);
     throw error;
+  }
+};
+
+export const healRecipes = async () => {
+  console.log('[RecipeService] Starting database repair/healing...');
+  try {
+    const snapshot = await getDocs(collection(db, 'recipes'));
+    let healedCount = 0;
+    
+    const promises = snapshot.docs.map(async (docSnap) => {
+      const data = docSnap.data();
+      const updates: any = {};
+      
+      // Ensure EVERYTHING is public for the "public box" experience
+      if (data.is_public !== true) {
+        updates.is_public = true;
+      }
+
+      // Add missing timestamps - ORDER BY requires these fields to exist!
+      if (!data.created_at) {
+        updates.created_at = serverTimestamp();
+      }
+      if (!data.updated_at) {
+        updates.updated_at = serverTimestamp();
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(docSnap.ref, updates);
+        healedCount++;
+      }
+    });
+    
+    await Promise.all(promises);
+    console.log(`[RecipeService] Healing complete. Repaired ${healedCount} recipes.`);
+    return healedCount;
+  } catch (err) {
+    console.error('[RecipeService] Error healing recipes:', err);
+    throw err;
   }
 };

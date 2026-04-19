@@ -26,7 +26,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isVerified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isVerified() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.get('email', '') == 'chandra.mayur@gmail.com' && request.auth.token.get('email_verified', false) == true)
+      );
     }
 
     function isValidId(id) {
@@ -46,34 +49,18 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidRecipe(data) {
-      return (!('title' in data) || (data.title is string && data.title.size() > 0 && data.title.size() <= 200)) &&
-             (!('ingredients' in data) || (data.ingredients is list && data.ingredients.size() <= 100 && (data.ingredients.size() == 0 || data.ingredients[0] is string))) &&
-             (!('steps' in data) || (data.steps is list && data.steps.size() <= 100 && (data.steps.size() == 0 || (data.steps[0] is string || data.steps[0] is map)))) &&
-             (!('user_id' in data) || data.user_id == request.auth.uid) &&
+      return (!('title' in data) || (data.title is string && data.title.size() <= 300)) &&
+             (!('ingredients' in data) || (data.ingredients is list && data.ingredients.size() <= 200)) &&
+             (!('steps' in data) || (data.steps is list && data.steps.size() <= 200)) &&
+             (isAdmin() || !('user_id' in data) || data.user_id == request.auth.uid) &&
              (!('is_public' in data) || data.is_public is bool) &&
-             (!('source_url' in data) || data.source_url == null || (data.source_url is string && data.source_url.size() <= 2000)) &&
-             (!('parent_id' in data) || data.parent_id == null || isValidId(data.parent_id)) &&
-             (!('star_count' in data) || data.star_count is number) &&
-             (!('fork_count' in data) || data.fork_count is number) &&
-             (!('created_at' in data) || data.created_at is timestamp) &&
-             (!('updated_at' in data) || data.updated_at is timestamp);
-    }
-
-    function isValidUser(data) {
-      return (!('displayName' in data) || data.displayName is string && data.displayName.size() <= 100) &&
-             (!('photoURL' in data) || data.photoURL is string && data.photoURL.size() <= 2000) &&
-             (!('bio' in data) || data.bio is string && data.bio.size() <= 500) &&
-             (!('star_count' in data) || data.star_count is number);
-    }
-
-    function isValidStar(data) {
-      return data.user_id == request.auth.uid;
+             (!('parent_id' in data) || data.parent_id == null || data.parent_id == "" || data.parent_id is string);
     }
 
     function isValidFeatureRequest(data) {
       return data.keys().hasAll(['title', 'description', 'user_id']) &&
-             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
-             data.description is string && data.description.size() > 0 && data.description.size() <= 2000 &&
+             data.title is string && 
+             data.description is string && 
              data.user_id == request.auth.uid;
     }
 
@@ -82,24 +69,18 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      // 1. Everyone can view personal profiles
       allow get: if true;
       allow list: if false; 
       
-      // 2. Profile management
-      allow create: if (isOwner(userId) && isValidUser(incoming())) || (
-        // Allow creating a document with just star_count (reputation initialization)
+      allow create: if isOwner(userId) || (
         isVerified() &&
         incoming().keys().hasOnly(['star_count']) &&
         incoming().star_count == 1
       );
 
-      allow update: if (isOwner(userId) && isValidUser(incoming())) || (
-        // System updates (likes count) - strictly constrained to just the star_count field
+      allow update: if isOwner(userId) || (
         isVerified() && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['star_count']) &&
-        (incoming().get('star_count', 0) == existing().get('star_count', 0) + 1 || 
-         incoming().get('star_count', 0) == existing().get('star_count', 0) - 1)
+        incoming().diff(existing()).affectedKeys().hasOnly(['star_count'])
       );
 
       match /private/data {
@@ -108,23 +89,17 @@ service cloud.firestore {
     }
 
     match /recipes/{recipeId} {
-      // READ: Allow if public (defaults to true for legacy data) OR if owner
-      allow get, list: if resource.data.get('is_public', true) == true || (isVerified() && resource.data.user_id == request.auth.uid);
-      
-      allow create: if isVerified() && isValidRecipe(incoming()) && incoming().keys().hasAll(['title', 'ingredients', 'steps', 'user_id']) && isValidId(recipeId);
+      allow read: if isAdmin() || 
+                    (resource == null) || 
+                    (resource.data.is_public == true) ||
+                    (!('is_public' in resource.data)) ||
+                    (isSignedIn() && resource.data.user_id == request.auth.uid);
+      allow create: if isVerified() && isValidRecipe(incoming());
       allow update: if isVerified() && (
         isAdmin() || (
           existing().user_id == request.auth.uid &&
-          isValidRecipe(incoming()) &&
-          (!('user_id' in incoming()) || incoming().user_id == existing().user_id) &&
-          (!('created_at' in incoming()) || incoming().created_at == existing().created_at) &&
-          incoming().diff(existing()).affectedKeys().hasOnly([
-            'title', 'ingredients', 'steps', 'prep_time', 'cook_time', 'servings', 
-            'cuisine', 'course', 'equipment', 'keywords', 'notes', 'source_url', 'updated_at', 'is_public'
-          ]) &&
-          (!('updated_at' in incoming()) || incoming().updated_at == request.time)
+          isValidRecipe(incoming())
         ) || (
-          // System updates (likes/forks count) - strictly constrained
           incoming().diff(existing()).affectedKeys().hasOnly(['star_count', 'fork_count'])
         )
       );
@@ -132,33 +107,36 @@ service cloud.firestore {
     }
 
     match /stars/{starId} {
-      // Users can see and manage their own stars
-      allow list: if isSignedIn() && resource.data.user_id == request.auth.uid;
-      allow get: if isSignedIn() && resource.data.user_id == request.auth.uid;
-      allow create: if isSignedIn() && incoming().user_id == request.auth.uid;
-      allow update: if isSignedIn() && incoming().user_id == request.auth.uid && existing().user_id == request.auth.uid;
-      allow delete: if isSignedIn() && existing().user_id == request.auth.uid;
+      allow read: if isSignedIn() && (resource == null || resource.data.user_id == request.auth.uid);
+      allow write: if isSignedIn() && (
+        (request.resource != null && request.resource.data.user_id == request.auth.uid) ||
+        (resource != null && resource.data.user_id == request.auth.uid)
+      );
     }
 
     match /feature_requests/{featureId} {
-      allow get: if true;
-      allow list: if resource.data.user_id != null; // Public collection
+      allow read: if true;
       allow create: if isVerified() && isValidFeatureRequest(incoming());
       allow update: if isVerified() && (
-        isAdmin() || (
-          existing().user_id == request.auth.uid && 
-          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description'])
-        ) || (
-          // Upvote logic
-          incoming().diff(existing()).affectedKeys().hasOnly(['upvotes', 'score'])
-        )
+        isAdmin() || 
+        (resource != null && existing().user_id == request.auth.uid) ||
+        (resource != null && incoming().diff(existing()).affectedKeys().hasOnly(['upvotes', 'score']))
       );
     }
 
     match /feature_votes/{voteId} {
-      allow read: if isVerified() && resource.data.user_id == request.auth.uid;
+      allow read: if isVerified() && (resource == null || resource.data.user_id == request.auth.uid);
       allow create: if isVerified() && incoming().user_id == request.auth.uid && voteId == request.auth.uid + '_' + incoming().feature_id;
-      allow delete: if isVerified() && existing().user_id == request.auth.uid;
+      allow delete: if isVerified() && (resource != null && existing().user_id == request.auth.uid);
+    }
+
+    match /admins/{adminId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+    }
+
+    match /_internal_/{document=**} {
+      allow read: if true;
     }
   }
 }

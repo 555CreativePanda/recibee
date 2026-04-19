@@ -255,8 +255,13 @@ app.post('/api/import', async (req, res) => {
       const statusCode = e.response?.status;
       
       // If we hit a challenge (402, 403) from a known protected site, don't waste time on proxies
-      if ((statusCode === 402 || statusCode === 403) && (url.includes('seriouseats.com') || url.includes('nytimes.com') || url.includes('bonappetit.com'))) {
-        console.info(`Direct access blocked by protection on ${url}. Handing off to AI immediately.`);
+      const knownProtected = [
+        'seriouseats.com', 'nytimes.com', 'bonappetit.com', 'masalaandchai.com', 
+        'halfbakedharvest.com', 'epicurious.com', 'food52.com', 'allrecipes.com',
+        'simplyrecipes.com', 'delish.com', 'thepioneerwoman.com'
+      ];
+      if ((statusCode === 402 || statusCode === 403) && knownProtected.some(p => url.includes(p))) {
+        console.info(`[Scraper] Known protection on ${url} (Status ${statusCode}). Switching to AI URL import.`);
         return res.json({ 
           needsAI: true, 
           rawText: '', 

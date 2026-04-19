@@ -40,6 +40,7 @@ export interface Recipe {
   parent_title?: string | null;
   parent_user_id?: string | null;
   user_id: string;
+  is_public: boolean;
   source_url?: string | null;
   star_count?: number;
   fork_count?: number;

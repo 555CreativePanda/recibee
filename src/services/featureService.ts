@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { FeatureRequest, FeatureVote } from '../types';
+import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 
 const FEATURES_PER_PAGE = 10;
 
@@ -26,7 +27,6 @@ export const getFeatureRequests = async (lastVisible?: any) => {
     let q = query(
       collection(db, path),
       orderBy('score', 'desc'),
-      orderBy('created_at', 'desc'),
       limit(FEATURES_PER_PAGE)
     );
 
@@ -38,12 +38,12 @@ export const getFeatureRequests = async (lastVisible?: any) => {
     const features = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-      created_at: (doc.data().created_at as Timestamp).toDate().toISOString()
+      created_at: (doc.data().created_at as Timestamp)?.toDate?.()?.toISOString() || new Date().toISOString()
     })) as FeatureRequest[];
 
     return {
       features,
-      lastVisible: snapshot.docs[snapshot.docs.length - 1]
+      lastVisible: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null
     };
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
@@ -153,57 +153,3 @@ export const voteOnFeature = async (featureId: string, userId: string, voteType:
     throw error;
   }
 };
-
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId: string | undefined;
-    email: string | null | undefined;
-    emailVerified: boolean | undefined;
-    isAnonymous: boolean | undefined;
-    tenantId: string | null | undefined;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
-  }
-}
-
-import { auth as firebaseAuth } from '../lib/firebase';
-import { safeStringify } from '../lib/utils';
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: firebaseAuth.currentUser?.uid,
-      email: firebaseAuth.currentUser?.email,
-      emailVerified: firebaseAuth.currentUser?.emailVerified,
-      isAnonymous: firebaseAuth.currentUser?.isAnonymous,
-      tenantId: firebaseAuth.currentUser?.tenantId,
-      providerInfo: firebaseAuth.currentUser?.providerData.map(provider => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        email: provider.email,
-        photoUrl: provider.photoURL
-      })) || []
-    },
-    operationType,
-    path
-  }
-  console.error('Firestore Error: ', safeStringify(errInfo));
-  throw new Error(safeStringify(errInfo));
-}

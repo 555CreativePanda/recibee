@@ -54,8 +54,10 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
     // Fetch direct forks once instead of listening to all recipes
     const fetchForks = async () => {
       try {
-        const fetched = await getChildForks(id, 20);
-        setAllRecipes(fetched);
+        if (id && !id.startsWith('temp-')) {
+          const fetched = await getChildForks(id, 20);
+          setAllRecipes(fetched);
+        }
       } catch (error) {
         console.error('Error fetching forks:', error);
       }
@@ -63,18 +65,20 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
 
     fetchForks();
 
-    // Also listen for changes to the main recipe
-    const unsubscribeRecipe = onSnapshot(doc(db, 'recipes', id), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setRecipe({
-          ...data,
-          id: docSnap.id,
-          created_at: data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString(),
-          updated_at: data.updated_at?.toDate?.()?.toISOString() || data.updated_at || data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString()
-        } as Recipe);
-      }
-    });
+    let unsubscribeRecipe = () => {};
+    if (id && !id.startsWith('temp-')) {
+      unsubscribeRecipe = onSnapshot(doc(db, 'recipes', id), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setRecipe({
+            ...data,
+            id: docSnap.id,
+            created_at: data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString(),
+            updated_at: data.updated_at?.toDate?.()?.toISOString() || data.updated_at || data.created_at?.toDate?.()?.toISOString() || data.created_at || new Date().toISOString()
+          } as Recipe);
+        }
+      });
+    }
 
     return () => {
       unsubscribeRecipe();
@@ -106,6 +110,7 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
       parent_title: targetRecipe.title,
       parent_user_id: targetRecipe.user_id,
       user_id: user.uid,
+      is_public: true,
       source_url: targetRecipe.source_url || null,
       created_at: new Date().toISOString(),
     };
@@ -135,6 +140,14 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
         message: 'An error occurred while saving the recipe.'
       });
     }
+  };
+
+  const handleDelete = () => {
+    setNotification({
+      title: 'Recipe Deleted',
+      message: 'Recipe has been permanently removed.'
+    });
+    navigate('/explore');
   };
 
   if (isLoading) {
@@ -209,6 +222,7 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
               user={user}
               expandedDefault={true}
               onUserClick={onUserClick}
+              onDelete={handleDelete}
               allRecipes={allRecipes}
             />
 

@@ -17,6 +17,7 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
   const [cuisine, setCuisine] = useState(recipe.cuisine || '');
   const [course, setCourse] = useState(recipe.course || '');
   const [notes, setNotes] = useState(recipe.notes || '');
+  const [isPublic, setIsPublic] = useState(recipe.is_public ?? true);
   const [keywords, setKeywords] = useState<string[]>(recipe.keywords || []);
   const [equipment, setEquipment] = useState<string[]>(recipe.equipment || []);
   const [newKeyword, setNewKeyword] = useState('');
@@ -174,6 +175,7 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
       keywords,
       equipment,
       notes,
+      is_public: true, // Force all recipes to be public
       ingredients: ingredients.map(({ id, ...ing }) => ing), // Strip temp IDs before saving
       steps: steps.map(({ id, ...s }) => s)
     });
@@ -314,6 +316,25 @@ export function RecipeEditor({ recipe, onSave, onCancel }: RecipeEditorProps) {
             placeholder="e.g. Main Dish"
             className="w-full bg-stone-50 border border-kitchen-border p-4 text-sm text-kitchen-text font-medium rounded-2xl focus:border-kitchen-primary focus:ring-1 focus:ring-kitchen-primary outline-none transition-all"
           />
+        </div>
+        <div className="space-y-3">
+          <label className="block text-[10px] uppercase tracking-widest text-kitchen-muted font-bold">Public Visibility</label>
+          <button
+            disabled
+            className={cn(
+              "w-full flex items-center justify-between gap-3 p-4 rounded-2xl border transition-all text-sm font-bold uppercase tracking-widest",
+              "bg-stone-50 border-kitchen-border text-stone-400 cursor-not-allowed"
+            )}
+          >
+            <span>Public (Required)</span>
+            <div className={cn(
+              "w-10 h-5 rounded-full relative transition-all bg-green-200"
+            )}>
+              <div className={cn(
+                "w-3 h-3 bg-white rounded-full absolute top-1 transition-all right-1"
+              )} />
+            </div>
+          </button>
         </div>
       </div>
 

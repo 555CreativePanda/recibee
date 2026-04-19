@@ -265,11 +265,28 @@ function AppContent() {
     };
   }, [user]);
 
+  // Background healing for admin
   useEffect(() => {
-    if (editingRecipe) {
-      window.scrollTo(0, 0);
-    }
-  }, [editingRecipe]);
+    const runAutoHeal = async () => {
+      if (user && user.email === 'chandra.mayur@gmail.com') {
+        try {
+          const { healRecipes } = await import('./services/recipeService');
+          const repaired = await healRecipes();
+          if (repaired > 0) {
+            console.log(`[AutoHeal] Background metadata repair complete. Repaired ${repaired} recipes.`);
+            setNotification({
+              title: 'Library Repaired',
+              message: `Successfully updated metadata for ${repaired} recipes to ensure they are visible to public users and correctly sorted.`
+            });
+            clearTabCache();
+          }
+        } catch (err) {
+          console.error('[AutoHeal] Failed:', err);
+        }
+      }
+    };
+    if (user) runAutoHeal();
+  }, [user?.uid]);
 
   const handleLogin = () => {
     setAuthAction('');
@@ -279,6 +296,8 @@ function AppContent() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      // Redirect to "All Recipes" (Explore) and refresh page state
+      window.location.href = '/explore';
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -414,6 +433,7 @@ function AppContent() {
         notes: data.notes || '',
         parent_id: null,
         user_id: user!.uid,
+        is_public: true,
         source_url: sourceUrl,
         created_at: new Date().toISOString(),
       };
@@ -455,6 +475,7 @@ function AppContent() {
       parent_title: recipe.title,
       parent_user_id: recipe.user_id,
       user_id: user.uid,
+      is_public: true,
       source_url: recipe.source_url || null,
       created_at: new Date().toISOString(),
     };
@@ -512,6 +533,7 @@ function AppContent() {
       steps: [],
       parent_id: null,
       user_id: user!.uid,
+      is_public: true,
       created_at: new Date().toISOString(),
     };
     setEditingRecipe(newRecipe);
@@ -522,28 +544,92 @@ function AppContent() {
     if (!ensureAuth('seed the recipe box')) return;
     setIsLoading(true);
     try {
-      const starterRecipe = {
-        title: 'Classic Carbonara',
-        ingredients: [
-          { item: 'Spaghetti', amount: '400', unit: 'g' },
-          { item: 'Guanciale', amount: '150', unit: 'g' },
-          { item: 'Pecorino Romano', amount: '50', unit: 'g' },
-          { item: 'Eggs', amount: '4', unit: 'large' },
-        ],
-        steps: [
-          'Boil salted water in a large pot.',
-          'Crisp the guanciale in a pan until fat renders.',
-          'Whisk eggs and cheese in a bowl.',
-          'Toss pasta with guanciale, then remove from heat and stir in egg mixture quickly.',
-        ],
-        parent_id: null,
-        user_id: user.uid,
-        is_public: true,
-        created_at: serverTimestamp(),
-      };
-      await addDoc(collection(db, 'recipes'), starterRecipe);
+      const recipesToSeed = [
+        {
+          title: 'Classic Carbonara',
+          ingredients: [
+            { item: 'Spaghetti', amount: '400', unit: 'g' },
+            { item: 'Guanciale', amount: '150', unit: 'g' },
+            { item: 'Pecorino Romano', amount: '50', unit: 'g' },
+            { item: 'Eggs', amount: '4', unit: 'large' },
+          ],
+          steps: [
+            'Boil salted water in a large pot.',
+            'Crisp the guanciale in a pan until fat renders.',
+            'Whisk eggs and cheese in a bowl.',
+            'Toss pasta with guanciale, then remove from heat and stir in egg mixture quickly.',
+          ],
+          parent_id: null,
+          user_id: user.uid,
+          is_public: true,
+          star_count: 5,
+          fork_count: 2,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp()
+        },
+        {
+          title: 'Spicy Thai Basil Chicken',
+          ingredients: [
+            { item: 'Chicken Thighs', amount: '500', unit: 'g' },
+            { item: 'Holy Basil', amount: '1', unit: 'cup' },
+            { item: 'Thai Bird Eye Chilies', amount: '5', unit: '' },
+            { item: 'Garlic', amount: '4', unit: 'cloves' },
+            { item: 'Soy Sauce', amount: '2', unit: 'tbsp' },
+            { item: 'Fish Sauce', amount: '1', unit: 'tbsp' },
+          ],
+          steps: [
+            'Pound garlic and chilies into a paste.',
+            'Stir-fry the chicken until cooked through.',
+            'Add the paste and sauces, stir well.',
+            'Toss in basil leaves at the end until just wilted.',
+          ],
+          parent_id: null,
+          user_id: user.uid,
+          is_public: true,
+          star_count: 12,
+          fork_count: 8,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp()
+        },
+        {
+          title: 'Authentic Guacamole',
+          ingredients: [
+            { item: 'Avocados', amount: '3', unit: 'ripe' },
+            { item: 'Lime', amount: '1', unit: '' },
+            { item: 'Onion', amount: '1/2', unit: 'small' },
+            { item: 'Cilantro', amount: '1/4', unit: 'cup' },
+            { item: 'Jalapeño', amount: '1', unit: '' },
+          ],
+          steps: [
+            'Mash avocados in a bowl, leaving some chunks.',
+            'Stir in finely chopped onion, cilantro, and jalapeño.',
+            'Squeeze in lime juice and season with salt.',
+          ],
+          parent_id: null,
+          user_id: user.uid,
+          is_public: true,
+          star_count: 8,
+          fork_count: 3,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp()
+        }
+      ];
+
+      for (const recipe of recipesToSeed) {
+        await addDoc(collection(db, 'recipes'), recipe);
+      }
+      
+      setNotification({
+        title: 'Database Seeded',
+        message: 'Successfully added starter recipes to the box.'
+      });
+      clearTabCache();
     } catch (error) {
       console.error('Error seeding database:', error);
+      setNotification({
+        title: 'Seeding Failed',
+        message: 'An error occurred while seeding the database.'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -551,6 +637,28 @@ function AppContent() {
 
   const handleUserClick = (uid: string) => {
     setProfileModal({ uid, mode: 'view' });
+  };
+
+  const [isHealing, setIsHealing] = useState(false);
+  const handleHeal = async () => {
+    if (!user || user.email !== 'chandra.mayur@gmail.com') return;
+    setIsHealing(true);
+    try {
+      const { healRecipes } = await import('./services/recipeService');
+      const count = await healRecipes();
+      setNotification({
+        title: 'Heal Complete',
+        message: `Database healing finished. ${count} recipes were updated with public status. Please refresh the page.`
+      });
+      clearTabCache();
+    } catch (err: any) {
+      setNotification({
+        title: 'Heal Failed',
+        message: err.message || 'Error occurred during healing.'
+      });
+    } finally {
+      setIsHealing(false);
+    }
   };
 
   const handleEditOwnProfile = (e?: React.MouseEvent) => {
@@ -974,7 +1082,7 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      <Footer />
+      <Footer user={user} onHeal={handleHeal} isHealing={isHealing} />
     </div>
   );
 }
