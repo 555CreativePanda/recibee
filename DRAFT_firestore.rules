@@ -50,7 +50,6 @@ service cloud.firestore {
              data.steps is list && data.steps.size() <= 100 &&
              (data.steps.size() == 0 || (data.steps[0] is string || data.steps[0] is map)) &&
              data.user_id == request.auth.uid &&
-             (!('is_public' in data) || data.is_public is bool) &&
              (!('source_url' in data) || data.source_url == null || (data.source_url is string && data.source_url.size() <= 2000)) &&
              (!('parent_id' in data) || data.parent_id == null || isValidId(data.parent_id)) &&
              (!('star_count' in data) || data.star_count is number) &&
@@ -86,9 +85,8 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      // Public profiles: Anyone can view specific profile, but no listing
-      allow get: if true;
-      allow list: if false; 
+      allow get: if isVerified();
+      allow list: if false; // Prevention of user scraping
       allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().uid == userId;
       allow update: if isOwner(userId) && isValidUser(incoming()) && 
                        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'bio', 'updated_at']) &&
@@ -100,10 +98,8 @@ service cloud.firestore {
     }
 
     match /recipes/{recipeId} {
-      // READ: Allow if public (defaults to true for legacy data) OR if owner
-      allow get: if resource.data.get('is_public', true) == true || (isVerified() && resource.data.user_id == request.auth.uid);
-      allow list: if resource.data.get('is_public', true) == true || (isVerified() && resource.data.user_id == request.auth.uid);
-      
+      allow get: if isVerified();
+      allow list: if isVerified() && resource.data.user_id != null; 
       allow create: if isVerified() && isValidRecipe(incoming()) && isValidId(recipeId);
       allow update: if isVerified() && (
         isAdmin() || (
@@ -113,11 +109,11 @@ service cloud.firestore {
           incoming().created_at == existing().created_at &&
           incoming().diff(existing()).affectedKeys().hasOnly([
             'title', 'ingredients', 'steps', 'prep_time', 'cook_time', 'servings', 
-            'cuisine', 'course', 'equipment', 'keywords', 'notes', 'source_url', 'updated_at', 'is_public'
+            'cuisine', 'course', 'equipment', 'keywords', 'notes', 'source_url', 'updated_at'
           ]) &&
           (!('updated_at' in incoming()) || incoming().updated_at == request.time)
         ) || (
-          // System updates (likes/forks count) - strictly constrained
+          // System updates (likes/forks count)
           incoming().diff(existing()).affectedKeys().hasOnly(['star_count', 'fork_count'])
         )
       );
@@ -132,8 +128,8 @@ service cloud.firestore {
     }
 
     match /feature_requests/{featureId} {
-      allow get: if true;
-      allow list: if resource.data.user_id != null; // Public collection
+      allow get: if isVerified();
+      allow list: if isVerified() && resource.data.user_id != null;
       allow create: if isVerified() && isValidFeatureRequest(incoming());
       allow update: if isVerified() && (
         isAdmin() || (

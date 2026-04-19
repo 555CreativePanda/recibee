@@ -414,6 +414,7 @@ function AppContent() {
         ],
         parent_id: null,
         user_id: user.uid,
+        is_public: true,
         created_at: serverTimestamp(),
       };
       await addDoc(collection(db, 'recipes'), starterRecipe);

@@ -12,6 +12,7 @@
         "steps": { "type": "array" },
         "parent_id": { "type": "string" },
         "user_id": { "type": "string" },
+        "is_public": { "type": "boolean" },
         "source_url": { "type": "string" },
         "created_at": { "type": "string", "format": "date-time" }
       },

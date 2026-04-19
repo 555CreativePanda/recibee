@@ -191,10 +191,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   return (
     <div id={`recipe-${recipe.id}`} className="bg-white rounded-3xl shadow-lg border border-kitchen-border overflow-hidden transition-all duration-500 hover:shadow-2xl hover:-translate-y-1">
       {/* Recipe Header Style */}
-      <div className="p-8 border-b border-kitchen-border bg-stone-50/30">
-        <div className="flex flex-col gap-6">
+      <div className="p-4 md:p-8 border-b border-kitchen-border bg-stone-50/30">
+        <div className="flex flex-col gap-4 md:gap-6">
           {/* Line 1: Actions & Tags */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="px-3 py-1 rounded-full border border-kitchen-border text-[10px] text-kitchen-muted uppercase font-bold tracking-[0.1em] bg-white">
                 Public
@@ -207,26 +207,26 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
               )}
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   onFork(recipe);
                 }}
-                className="flex items-center gap-2 bg-kitchen-primary hover:bg-orange-700 text-white px-5 py-2.5 text-xs font-bold transition-all rounded-2xl shadow-lg shadow-orange-100 uppercase tracking-widest active:scale-95"
+                className="flex flex-1 sm:flex-none items-center justify-center gap-2 bg-kitchen-primary hover:bg-orange-700 text-white px-4 md:px-5 py-2 md:py-2.5 text-[10px] md:text-xs font-bold transition-all rounded-xl md:rounded-2xl shadow-lg shadow-orange-100 uppercase tracking-widest active:scale-95"
               >
-                <GitFork size={16} />
+                <GitFork size={14} className="md:w-[16px]" />
                 TWEAK
               </button>
               
               {isOwner && (
-                <>
+                <div className="flex flex-1 sm:flex-none gap-2 sm:gap-3">
                   <button
                     onClick={() => onEdit(recipe)}
-                    className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200 text-kitchen-text px-5 py-2.5 text-xs font-bold transition-all rounded-2xl uppercase tracking-widest active:scale-95"
+                    className="flex flex-1 sm:flex-none items-center justify-center gap-2 bg-stone-100 hover:bg-stone-200 text-kitchen-text px-4 md:px-5 py-2 md:py-2.5 text-[10px] md:text-xs font-bold transition-all rounded-xl md:rounded-2xl uppercase tracking-widest active:scale-95"
                   >
-                    <Edit2 size={16} />
+                    <Edit2 size={14} className="md:w-[16px]" />
                     Edit
                   </button>
                   <button
@@ -235,42 +235,42 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                       e.stopPropagation();
                       setShowDeleteConfirm(true);
                     }}
-                    className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-5 py-2.5 text-xs font-bold transition-all rounded-2xl uppercase tracking-widest active:scale-95"
+                    className="flex flex-1 sm:flex-none items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-4 md:px-5 py-2 md:py-2.5 text-[10px] md:text-xs font-bold transition-all rounded-xl md:rounded-2xl uppercase tracking-widest active:scale-95"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} className="md:w-[16px]" />
                     Delete
                   </button>
-                </>
+                </div>
               )}
             </div>
           </div>
 
           {/* Line 2: Identity & Date */}
-          <div className="flex flex-col md:flex-row md:items-baseline md:justify-between gap-2 md:gap-6">
-            <div className="flex items-baseline gap-3 min-w-0">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 min-w-0">
               <span 
                 onClick={() => onUserClick?.(recipe.user_id)}
-                className="text-kitchen-primary hover:underline cursor-pointer font-bold text-sm shrink-0 uppercase tracking-widest"
+                className="text-kitchen-primary hover:underline cursor-pointer font-bold text-xs md:text-sm shrink-0 uppercase tracking-widest"
               >
                 @{userHandle}
               </span>
-              <span className="text-stone-300 shrink-0 font-light">/</span>
+              <span className="hidden sm:inline text-stone-300 shrink-0 font-light">/</span>
               <Link 
                 to={`/recipe/${recipe.id}`}
-                className="text-kitchen-text font-serif font-bold text-3xl hover:text-kitchen-primary transition-colors truncate leading-tight"
+                className="text-kitchen-text font-serif font-bold text-2xl md:text-3xl hover:text-kitchen-primary transition-colors truncate leading-tight overflow-hidden text-ellipsis"
               >
                 {recipe.title}
               </Link>
             </div>
             
-            <div className="text-[10px] font-bold text-kitchen-muted shrink-0 uppercase tracking-[0.2em]">
+            <div className="text-[9px] md:text-[10px] font-bold text-kitchen-muted shrink-0 uppercase tracking-[0.2em]">
               Updated <span className="text-kitchen-text">{formatUpdateDate(recipe.updated_at || recipe.created_at)}</span>
             </div>
           </div>
 
           {/* Line 3: Stats & Source */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
-            <div className="flex flex-wrap items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-kitchen-muted">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-4 md:gap-6 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-kitchen-muted">
               <button 
                 onClick={handleStarToggle}
                 className={cn(
@@ -278,22 +278,22 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                   isStarred ? "text-kitchen-primary" : "hover:text-kitchen-primary"
                 )}
               >
-                <Star size={16} fill={isStarred ? "currentColor" : "none"} />
-                <span>{recipe.star_count || 0} likes</span>
+                <Star size={14} className="md:w-[16px]" fill={isStarred ? "currentColor" : "none"} />
+                <span>{recipe.star_count || 0} <span className="hidden xs:inline">likes</span><span className="xs:hidden">L</span></span>
               </button>
               
               <div className="flex items-center gap-2 hover:text-kitchen-primary cursor-pointer">
-                <GitFork size={16} />
-                <span>{recipe.fork_count || 0} copies</span>
+                <GitFork size={14} className="md:w-[16px]" />
+                <span>{recipe.fork_count || 0} <span className="hidden xs:inline">copies</span><span className="xs:hidden">C</span></span>
               </div>
 
               {recipe.parent_id && (
                 <button 
                   onClick={() => scrollToRecipe(recipe.parent_id!)}
-                  className="flex items-center gap-2 text-kitchen-primary hover:underline"
+                  className="flex items-center gap-2 text-kitchen-primary hover:underline truncate max-w-[200px]"
                 >
-                  <GitFork size={16} className="rotate-180" />
-                  <span>from {recipe.parent_user_id ? `@${recipe.parent_user_id.slice(0, 8)} / ` : ''}{recipe.parent_title || recipe.parent_id.slice(0, 8)}</span>
+                  <GitFork size={14} className="md:w-[16px] rotate-180 shrink-0" />
+                  <span className="truncate">from {recipe.parent_user_id ? `@${recipe.parent_user_id.slice(0, 8)} / ` : ''}{recipe.parent_title || recipe.parent_id.slice(0, 8)}</span>
                 </button>
               )}
             </div>
@@ -303,10 +303,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                 href={recipe.source_url} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-stone-400 hover:text-kitchen-primary transition-colors truncate max-w-full md:max-w-[250px]"
+                className="flex items-center gap-2 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-stone-400 hover:text-kitchen-primary transition-colors truncate max-w-full sm:max-w-[200px]"
               >
-                <Globe size={16} />
-                <span>{new URL(recipe.source_url).hostname}</span>
+                <Globe size={14} className="md:w-[16px]" />
+                <span className="truncate">{new URL(recipe.source_url).hostname}</span>
               </a>
             )}
           </div>
@@ -315,35 +315,35 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
       {/* Metadata Bar */}
       {(recipe.prep_time || recipe.cook_time || recipe.servings || recipe.cuisine || recipe.course) && (
-        <div className="px-8 py-6 bg-white border-b border-kitchen-border grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="px-4 md:px-8 py-4 md:py-6 bg-white border-b border-kitchen-border grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-8">
           {recipe.prep_time && (
-            <div className="space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-kitchen-muted">Prep Time</span>
-              <p className="text-sm text-kitchen-text font-bold">{recipe.prep_time}</p>
+            <div className="space-y-1">
+              <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-kitchen-muted">Prep</span>
+              <p className="text-xs md:text-sm text-kitchen-text font-bold leading-tight">{recipe.prep_time}</p>
             </div>
           )}
           {recipe.cook_time && (
-            <div className="space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-kitchen-muted">Cook Time</span>
-              <p className="text-sm text-kitchen-text font-bold">{recipe.cook_time}</p>
+            <div className="space-y-1">
+              <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-kitchen-muted">Cook</span>
+              <p className="text-xs md:text-sm text-kitchen-text font-bold leading-tight">{recipe.cook_time}</p>
             </div>
           )}
           {recipe.servings && (
-            <div className="space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-kitchen-muted">Servings</span>
-              <p className="text-sm text-kitchen-text font-bold">{recipe.servings}</p>
+            <div className="space-y-1">
+              <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-kitchen-muted">Servings</span>
+              <p className="text-xs md:text-sm text-kitchen-text font-bold leading-tight">{recipe.servings}</p>
             </div>
           )}
           {recipe.cuisine && (
-            <div className="space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-kitchen-muted">Cuisine</span>
-              <p className="text-sm text-kitchen-text font-bold">{recipe.cuisine}</p>
+            <div className="space-y-1">
+              <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-kitchen-muted">Cuisine</span>
+              <p className="text-xs md:text-sm text-kitchen-text font-bold leading-tight">{recipe.cuisine}</p>
             </div>
           )}
           {recipe.course && (
-            <div className="space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-kitchen-muted">Course</span>
-              <p className="text-sm text-kitchen-text font-bold">{recipe.course}</p>
+            <div className="space-y-1">
+              <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-kitchen-muted">Course</span>
+              <p className="text-xs md:text-sm text-kitchen-text font-bold leading-tight">{recipe.course}</p>
             </div>
           )}
         </div>
@@ -407,10 +407,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
       </AnimatePresence>
 
       <div 
-        className="px-8 py-4 flex items-center gap-3 cursor-pointer hover:bg-stone-50 transition-all text-[10px] font-bold uppercase tracking-[0.2em] text-kitchen-muted"
+        className="px-4 md:px-8 py-3 md:py-4 flex items-center gap-2 md:gap-3 cursor-pointer hover:bg-stone-50 transition-all text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-kitchen-muted"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        {isExpanded ? <ChevronDown size={14} className="md:w-[16px]" /> : <ChevronRight size={14} className="md:w-[16px]" />}
         <span>{isExpanded ? 'Hide' : 'Show'} Recipe Details</span>
       </div>
 
@@ -424,114 +424,117 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             <div className="border-t border-kitchen-border">
-              <div className="p-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h4 className="text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Ingredients</h4>
+              <div className="p-4 md:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <h4 className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Ingredients</h4>
                   {recipe.original_ingredients && (
-                    <div className="flex gap-6 text-[10px] uppercase font-bold tracking-widest">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 bg-green-500 rounded-full" />
+                    <div className="flex gap-4 md:gap-6 text-[9px] md:text-[10px] uppercase font-bold tracking-widest">
+                      <div className="flex items-center gap-1 md:gap-2">
+                        <div className="w-2 h-2 md:w-2.5 md:h-2.5 bg-green-500 rounded-full" />
                         <span className="text-green-600">Added</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 bg-kitchen-primary rounded-full" />
+                      <div className="flex items-center gap-1 md:gap-2">
+                        <div className="w-2 h-2 md:w-2.5 md:h-2.5 bg-kitchen-primary rounded-full" />
                         <span className="text-kitchen-primary">Modified</span>
                       </div>
                     </div>
                   )}
                 </div>
-                <table className="kitchen-table">
-                  <thead>
-                    <tr>
-                      <th className="uppercase tracking-widest text-[10px]">Item</th>
-                      <th className="uppercase tracking-widest text-[10px]">Amount</th>
-                      <th className="uppercase tracking-widest text-[10px]">Unit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recipe.ingredients.map((ing, idx) => {
-                      if (ing.isHeader) {
+                
+                <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <table className="kitchen-table min-w-[300px]">
+                    <thead>
+                      <tr>
+                        <th className="uppercase tracking-widest text-[9px] md:text-[10px]">Item</th>
+                        <th className="uppercase tracking-widest text-[9px] md:text-[10px]">Qty</th>
+                        <th className="uppercase tracking-widest text-[9px] md:text-[10px]">Unit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recipe.ingredients.map((ing, idx) => {
+                        if (ing.isHeader) {
+                          return (
+                            <tr key={idx} className="bg-stone-50/50">
+                              <td colSpan={3} className="py-2.5 md:py-4 px-4 md:px-6 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] text-kitchen-primary border-y border-kitchen-border">
+                                {ing.item}
+                              </td>
+                            </tr>
+                          );
+                        }
+                        const diff = getIngredientDiff(ing, idx);
+                        const isNew = diff?.type === 'new';
+                        const isChanged = diff?.type === 'changed';
+
                         return (
-                          <tr key={idx} className="bg-stone-50/50">
-                            <td colSpan={3} className="py-4 px-6 text-[11px] font-bold uppercase tracking-[0.2em] text-kitchen-primary border-y border-kitchen-border">
-                              {ing.item}
+                          <tr key={idx} className={cn(
+                            "transition-colors",
+                            isNew && "bg-green-50/50",
+                            isChanged && "bg-orange-50/50"
+                          )}>
+                            <td className="font-medium text-kitchen-text py-2.5 md:py-4 text-[13px] md:text-sm">
+                              <div className="flex flex-col">
+                                {isChanged && diff.fields?.includes('item') && (
+                                  <span className="text-[8px] md:text-[10px] text-kitchen-muted line-through decoration-kitchen-primary/50 font-bold uppercase tracking-widest">
+                                    {diff.original?.item}
+                                  </span>
+                                )}
+                                <span className={cn(
+                                  isNew && "text-green-600 font-bold",
+                                  isChanged && diff.fields?.includes('item') && "text-kitchen-primary font-bold"
+                                )}>
+                                  {ing.item}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="text-kitchen-muted py-2.5 md:py-4 font-medium text-[13px] md:text-sm">
+                              <div className="flex flex-col">
+                                {isChanged && diff.fields?.includes('amount') && (
+                                  <span className="text-[8px] md:text-[10px] text-kitchen-muted line-through decoration-kitchen-primary/50 font-bold uppercase tracking-widest">
+                                    {diff.original?.amount}
+                                  </span>
+                                )}
+                                <span className={cn(
+                                  isChanged && diff.fields?.includes('amount') && "text-kitchen-primary font-bold"
+                                )}>
+                                  {ing.amount}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="text-kitchen-muted py-2.5 md:py-4 font-medium text-[13px] md:text-sm">
+                              <div className="flex flex-col">
+                                {isChanged && diff.fields?.includes('unit') && (
+                                  <span className="text-[8px] md:text-[10px] text-kitchen-muted line-through decoration-kitchen-primary/50 font-bold uppercase tracking-widest">
+                                    {diff.original?.unit}
+                                  </span>
+                                )}
+                                <span className={cn(
+                                  isChanged && diff.fields?.includes('unit') && "text-kitchen-primary font-bold"
+                                )}>
+                                  {ing.unit}
+                                </span>
+                              </div>
                             </td>
                           </tr>
                         );
-                      }
-                      const diff = getIngredientDiff(ing, idx);
-                      const isNew = diff?.type === 'new';
-                      const isChanged = diff?.type === 'changed';
-
-                      return (
-                        <tr key={idx} className={cn(
-                          "transition-colors",
-                          isNew && "bg-green-50/50",
-                          isChanged && "bg-orange-50/50"
-                        )}>
-                          <td className="font-medium text-kitchen-text py-4">
-                            <div className="flex flex-col">
-                              {isChanged && diff.fields?.includes('item') && (
-                                <span className="text-[10px] text-kitchen-muted line-through decoration-kitchen-primary/50 font-bold uppercase tracking-widest">
-                                  {diff.original?.item}
-                                </span>
-                              )}
-                              <span className={cn(
-                                isNew && "text-green-600 font-bold",
-                                isChanged && diff.fields?.includes('item') && "text-kitchen-primary font-bold"
-                              )}>
-                                {ing.item}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="text-kitchen-muted py-4 font-medium">
-                            <div className="flex flex-col">
-                              {isChanged && diff.fields?.includes('amount') && (
-                                <span className="text-[10px] text-kitchen-muted line-through decoration-kitchen-primary/50 font-bold uppercase tracking-widest">
-                                  {diff.original?.amount}
-                                </span>
-                              )}
-                              <span className={cn(
-                                isChanged && diff.fields?.includes('amount') && "text-kitchen-primary font-bold"
-                              )}>
-                                {ing.amount}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="text-kitchen-muted py-4 font-medium">
-                            <div className="flex flex-col">
-                              {isChanged && diff.fields?.includes('unit') && (
-                                <span className="text-[10px] text-kitchen-muted line-through decoration-kitchen-primary/50 font-bold uppercase tracking-widest">
-                                  {diff.original?.unit}
-                                </span>
-                              )}
-                              <span className={cn(
-                                isChanged && diff.fields?.includes('unit') && "text-kitchen-primary font-bold"
-                              )}>
-                                {ing.unit}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div className="p-8 bg-stone-50/30">
-                <div className="flex items-center justify-between mb-8">
-                  <h4 className="text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Preparation Steps</h4>
+              <div className="p-4 md:p-8 bg-stone-50/30">
+                <div className="mb-6 md:mb-8">
+                  <h4 className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Preparation Steps</h4>
                 </div>
-                <ol className="space-y-10">
+                <ol className="space-y-6 md:space-y-10">
                   {recipe.steps.map((step, idx) => {
                     const isSection = step !== null && typeof step === 'object' ? (step as Step).isSubheading : String(step || '').startsWith('[SECTION]:');
                     const text = (step !== null && typeof step === 'object') ? (step as Step).text : (isSection ? String(step || '').replace('[SECTION]:', '').trim() : (step as string || ''));
                     
                     if (isSection) {
                       return (
-                        <li key={idx} className="pt-8 first:pt-0">
-                          <h5 className="text-[11px] font-bold uppercase tracking-[0.2em] text-kitchen-primary mb-4 border-b border-kitchen-border pb-3">
+                        <li key={idx} className="pt-4 md:pt-8 first:pt-0">
+                          <h5 className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] text-kitchen-primary mb-3 md:mb-4 border-b border-kitchen-border pb-2 md:pb-3">
                             {text}
                           </h5>
                         </li>
@@ -544,25 +547,25 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
                     return (
                       <li key={idx} className={cn(
-                        "flex gap-6 text-sm p-6 -mx-4 rounded-3xl transition-all border",
-                        isNew && "bg-green-50/50 border-green-200 border-l-8 border-l-green-500",
-                        isChanged && "bg-orange-50/50 border-orange-200 border-l-8 border-l-kitchen-primary",
+                        "flex gap-4 md:gap-6 text-[13px] md:text-sm p-4 md:p-6 -mx-2 md:-mx-4 rounded-2xl md:rounded-3xl transition-all border",
+                        isNew && "bg-green-50/50 border-green-200 border-l-[6px] md:border-l-8 border-l-green-500",
+                        isChanged && "bg-orange-50/50 border-orange-200 border-l-[6px] md:border-l-8 border-l-kitchen-primary",
                         !isNew && !isChanged && "bg-white border-kitchen-border hover:border-kitchen-primary hover:shadow-md"
                       )}>
                         <span className={cn(
-                          "font-serif font-bold text-3xl shrink-0 leading-none",
+                          "font-serif font-bold text-2xl md:text-3xl shrink-0 leading-none",
                           isNew ? "text-green-600" : isChanged ? "text-kitchen-primary" : "text-stone-200"
                         )}>
                           {idx + 1}.
                         </span>
-                        <div className="space-y-3">
+                        <div className="space-y-2 md:space-y-3">
                           {isChanged && (
-                            <p className="text-[10px] text-kitchen-muted line-through decoration-kitchen-primary/50 leading-relaxed italic font-bold uppercase tracking-widest">
+                            <p className="text-[8px] md:text-[10px] text-kitchen-muted line-through decoration-kitchen-primary/50 leading-relaxed italic font-bold uppercase tracking-widest">
                               {diff.original}
                             </p>
                           )}
                           <p className={cn(
-                            "leading-relaxed font-medium",
+                            "leading-relaxed font-medium break-words",
                             isNew ? "text-green-700 font-bold" : isChanged ? "text-kitchen-text font-bold" : "text-kitchen-text"
                           )}>
                             {text}
@@ -575,13 +578,13 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
               </div>
 
               {(recipe.equipment?.length || recipe.keywords?.length || recipe.notes) && (
-                <div className="p-8 border-t border-kitchen-border space-y-10">
+                <div className="p-4 md:p-8 border-t border-kitchen-border space-y-8 md:space-y-10">
                   {recipe.equipment && recipe.equipment.length > 0 && (
-                    <div className="space-y-4">
-                      <h4 className="text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Kitchen Tools</h4>
-                      <div className="flex flex-wrap gap-3">
+                    <div className="space-y-3 md:space-y-4">
+                      <h4 className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Kitchen Tools</h4>
+                      <div className="flex flex-wrap gap-2 md:gap-3">
                         {recipe.equipment.map((item, i) => (
-                          <span key={i} className="bg-stone-100 text-kitchen-text text-[10px] font-bold px-4 py-2 rounded-xl border border-kitchen-border uppercase tracking-widest">
+                          <span key={i} className="bg-stone-100 text-kitchen-text text-[9px] md:text-[10px] font-bold px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl border border-kitchen-border uppercase tracking-widest leading-none">
                             {item}
                           </span>
                         ))}
@@ -590,11 +593,11 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                   )}
 
                   {recipe.keywords && recipe.keywords.length > 0 && (
-                    <div className="space-y-4">
-                      <h4 className="text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Tags</h4>
-                      <div className="flex flex-wrap gap-3">
+                    <div className="space-y-3 md:space-y-4">
+                      <h4 className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Tags</h4>
+                      <div className="flex flex-wrap gap-2 md:gap-3">
                         {recipe.keywords.map((tag, i) => (
-                          <span key={i} className="text-kitchen-primary text-[11px] font-bold hover:underline cursor-pointer uppercase tracking-widest bg-orange-50 px-3 py-1 rounded-lg border border-orange-100">
+                          <span key={i} className="text-kitchen-primary text-[10px] md:text-[11px] font-bold hover:underline cursor-pointer uppercase tracking-widest bg-orange-50 px-2 md:px-3 py-0.5 md:py-1 rounded-md md:rounded-lg border border-orange-100 leading-none">
                             #{tag}
                           </span>
                         ))}
@@ -603,10 +606,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                   )}
 
                   {recipe.notes && (
-                    <div className="space-y-4">
-                      <h4 className="text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Chef's Notes</h4>
-                      <div className="bg-stone-50 border-l-8 border-kitchen-primary p-6 rounded-r-3xl">
-                        <p className="text-sm text-kitchen-text leading-relaxed whitespace-pre-wrap italic font-medium">
+                    <div className="space-y-3 md:space-y-4">
+                      <h4 className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Chef's Notes</h4>
+                      <div className="bg-stone-50 border-l-[6px] md:border-l-8 border-kitchen-primary p-4 md:p-6 rounded-r-2xl md:rounded-r-3xl">
+                        <p className="text-[13px] md:text-sm text-kitchen-text leading-relaxed whitespace-pre-wrap italic font-medium">
                           {recipe.notes}
                         </p>
                       </div>
@@ -616,20 +619,22 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
               )}
 
               {childForks.length > 0 && (
-                <div className="p-8 border-t border-kitchen-border bg-stone-50/20">
-                  <h4 className="text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold mb-6">Community Tweaks</h4>
-                  <div className="grid gap-4">
+                <div className="p-4 md:p-8 border-t border-kitchen-border bg-stone-50/20">
+                  <h4 className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold mb-4 md:mb-6">Community Tweaks</h4>
+                  <div className="grid gap-3 md:gap-4">
                     {childForks.map(fork => (
                       <button
                         key={fork.id}
                         onClick={() => scrollToRecipe(fork.id)}
-                        className="flex items-center justify-between p-5 text-sm bg-white border border-kitchen-border rounded-2xl hover:border-kitchen-primary hover:shadow-xl transition-all group active:scale-[0.98]"
+                        className="flex items-center justify-between p-4 md:p-5 text-[13px] md:text-sm bg-white border border-kitchen-border rounded-xl md:rounded-2xl hover:border-kitchen-primary hover:shadow-xl transition-all group active:scale-[0.98] text-left"
                       >
-                        <div className="flex items-center gap-4">
-                          <GitFork size={18} className="text-kitchen-primary" />
-                          <span className="font-bold text-kitchen-muted uppercase tracking-widest text-[11px]">@{fork.user_id.slice(0, 8)} / <span className="font-serif font-bold text-kitchen-text text-base normal-case tracking-normal">{fork.title}</span></span>
+                        <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                          <GitFork size={16} className="text-kitchen-primary shrink-0" />
+                          <span className="font-bold text-kitchen-muted uppercase tracking-widest text-[10px] md:text-[11px] truncate">
+                            @{fork.user_id.slice(0, 8)} / <span className="font-serif font-bold text-kitchen-text text-sm md:text-base normal-case tracking-normal">{fork.title}</span>
+                          </span>
                         </div>
-                        <ChevronRight size={20} className="text-stone-300 group-hover:text-kitchen-primary transition-colors" />
+                        <ChevronRight size={18} className="text-stone-300 group-hover:text-kitchen-primary transition-colors shrink-0" />
                       </button>
                     ))}
                   </div>

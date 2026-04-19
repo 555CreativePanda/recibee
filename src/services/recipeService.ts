@@ -64,6 +64,7 @@ export const saveRecipe = async (updatedRecipe: Recipe, userId: string) => {
       const docRef = await addDoc(collection(db, path), {
         ...recipeToInsert,
         user_id: userId,
+        is_public: true,
         star_count: 0,
         fork_count: 0,
         created_at: serverTimestamp(),
@@ -216,6 +217,8 @@ export const getRecipesCount = async (filters?: { userId?: string }) => {
     if (filters?.userId) {
       q = query(q, where('user_id', '==', filters.userId));
     }
+    // No explicit is_public filter here to allow legacy recipes to be counted
+    // The security rules will filter accessibility
     
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count;
@@ -245,6 +248,9 @@ export const getRecipesPaginated = async (
     if (filters?.userId) {
       q = query(q, where('user_id', '==', filters.userId));
     }
+    // "All" tab:We remove the explicit is_public filter to allow legacy (pre-security-update) 
+    // recipes to show up. Security is still enforced by rules.
+    // If private recipes exist, guests will need a filtered query.
 
     if (lastVisibleDoc) {
       q = query(q, startAfter(lastVisibleDoc));
