@@ -4,7 +4,7 @@ import { cn, safeStringify } from '../lib/utils';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../lib/firebase';
-import { doc, getDoc, collection, query, where, onSnapshot, setDoc, deleteDoc, getDocs, increment, updateDoc, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, setDoc, deleteDoc, getDocs, increment, updateDoc, limit, serverTimestamp } from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
 import { getChildForks } from '../services/recipeService';
 
@@ -37,6 +37,11 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   const [childForks, setChildForks] = useState<Recipe[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [localStarCount, setLocalStarCount] = useState(recipe.star_count || 0);
+
+  useEffect(() => {
+    setLocalStarCount(recipe.star_count || 0);
+  }, [recipe.star_count]);
 
   useEffect(() => {
     if (isExpanded && childForks.length === 0) {
@@ -62,36 +67,79 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     const starId = `${user.uid}_${recipe.id}`;
     const starRef = doc(db, 'stars', starId);
     
+    // Optimistic update
+    const newStarredState = !isStarred;
+    const countChange = newStarredState ? 1 : -1;
+    setLocalStarCount(prev => Math.max(0, prev + countChange));
+
     console.log('Toggling star for recipe:', recipe.id, 'Current state:', isStarred);
     
     try {
       const recipeRef = doc(db, 'recipes', recipe.id);
+      const authorProfileRef = doc(db, 'users', recipe.user_id);
+
       if (isStarred) {
         console.log('Removing star...');
-        await deleteDoc(starRef);
-        await updateDoc(recipeRef, {
-          star_count: increment(-1)
-        });
+        try {
+          await deleteDoc(starRef);
+        } catch (e: any) {
+          throw { ...e, path: `stars/${starId}`, operationType: 'delete' };
+        }
+        
+        try {
+          await updateDoc(recipeRef, {
+            star_count: increment(-1)
+          });
+        } catch (e: any) {
+          throw { ...e, path: `recipes/${recipe.id}`, operationType: 'update' };
+        }
+
+        try {
+          await setDoc(authorProfileRef, {
+            star_count: increment(-1)
+          }, { merge: true });
+        } catch (e: any) {
+          throw { ...e, path: `users/${recipe.user_id}`, operationType: 'update' };
+        }
       } else {
         console.log('Adding star...');
-        await setDoc(starRef, {
-          recipe_id: recipe.id,
-          user_id: user.uid,
-          created_at: new Date().toISOString()
-        });
-        await updateDoc(recipeRef, {
-          star_count: increment(1)
-        });
+        try {
+          await setDoc(starRef, {
+            recipe_id: recipe.id,
+            user_id: user.uid,
+            created_at: serverTimestamp()
+          });
+        } catch (e: any) {
+          throw { ...e, path: `stars/${starId}`, operationType: 'write' };
+        }
+
+        try {
+          await updateDoc(recipeRef, {
+            star_count: increment(1)
+          });
+        } catch (e: any) {
+          throw { ...e, path: `recipes/${recipe.id}`, operationType: 'update' };
+        }
+
+        try {
+          await setDoc(authorProfileRef, {
+            star_count: increment(1)
+          }, { merge: true });
+        } catch (e: any) {
+          throw { ...e, path: `users/${recipe.user_id}`, operationType: 'update' };
+        }
       }
     } catch (error: any) {
+      // Revert on error
+      setLocalStarCount(prev => Math.max(0, prev - countChange));
       console.error('Error toggling star:', error);
       
       // Enhanced error reporting for Firestore permissions
-      if (error.code === 'permission-denied') {
+      if (error.code === 'permission-denied' || (error.error && error.error.includes('permissions'))) {
         const errInfo = {
-          error: error.message,
-          operationType: isStarred ? 'delete' : 'write',
-          path: `stars/${starId}`,
+          error: error.message || error.error || 'Permission Denied',
+          operationType: error.operationType || (isStarred ? 'delete' : 'write'),
+          path: error.path || `stars/${starId}`,
           authInfo: {
             userId: user.uid,
             email: user.email,
@@ -279,7 +327,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                 )}
               >
                 <Star size={14} className="md:w-[16px]" fill={isStarred ? "currentColor" : "none"} />
-                <span>{recipe.star_count || 0} <span className="hidden xs:inline">likes</span><span className="xs:hidden">L</span></span>
+                <span>{localStarCount} <span className="hidden xs:inline">likes</span><span className="xs:hidden">L</span></span>
               </button>
               
               <div className="flex items-center gap-2 hover:text-kitchen-primary cursor-pointer">

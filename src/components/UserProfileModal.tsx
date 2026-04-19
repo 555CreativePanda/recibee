@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { updateUserProfile, getUserProfile } from '../services/userService';
-import { X, User, Mail, FileText, Save, Loader2, Check } from 'lucide-react';
+import { X, User, Mail, FileText, Save, Loader2, Check, Star } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -146,6 +146,17 @@ export function UserProfileModal({ uid, currentUserId, mode, onClose, onProfileU
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Stats Section */}
+              <div className="flex justify-center gap-12 bg-stone-50/50 border border-kitchen-border py-6 rounded-3xl">
+                <div className="text-center group">
+                  <div className="flex items-center gap-2 mb-1 justify-center transition-transform group-hover:scale-110">
+                    <Star size={16} className="text-orange-600 fill-orange-600" />
+                    <p className="text-2xl font-serif font-bold text-kitchen-text">{profile?.star_count || 0}</p>
+                  </div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-kitchen-muted font-bold">Total Stars</p>
+                </div>
               </div>
 
               {/* Info Section */}

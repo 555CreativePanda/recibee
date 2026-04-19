@@ -17,6 +17,7 @@ export interface UserProfile {
   displayName: string | null;
   photoURL: string | null;
   bio?: string | null;
+  star_count?: number;
   updated_at?: string;
 }
 

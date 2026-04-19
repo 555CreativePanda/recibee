@@ -247,7 +247,22 @@ function AppContent() {
       }
     });
 
-    return () => unsubscribe();
+    // Listen to the user document for real-time profile updates (like star_count)
+    const profileUnsubscribe = onSnapshot(doc(db, 'users', user.uid), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setUserProfile(prev => ({
+          ...prev,
+          ...data,
+          uid: snapshot.id
+        } as UserProfile));
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      profileUnsubscribe();
+    };
   }, [user]);
 
   useEffect(() => {
