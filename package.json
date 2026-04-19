@@ -13,6 +13,8 @@
   "dependencies": {
     "@google/genai": "^1.49.0",
     "@google/generative-ai": "^0.24.1",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.14.0",
     "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
