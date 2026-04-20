@@ -31,7 +31,7 @@ export function Footer({ user, onHeal, isHealing }: FooterProps) {
           </div>
           
           <div className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">
-            © 2026 RECIBEE KITCHEN. v1.0.6-MAINTENANCE
+            © 2026 RECIBEE v1.0.6
           </div>
         </div>
 
