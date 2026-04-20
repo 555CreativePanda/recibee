@@ -50,7 +50,7 @@ export function handleFirestoreError(error: any, operationType: OperationType, p
     path
   }
   
-  console.error(`[Firestore ${operationType.toUpperCase()}] Error at ${path}:`, safeStringify(errInfo));
+  console.error('[Firestore %s] Error at %s:', operationType.toUpperCase(), path, safeStringify(errInfo));
   
   // Attach enhanced info to the original error object if possible
   if (error && typeof error === 'object') {
