@@ -223,10 +223,60 @@ const parseSteps = (instructions: any): any[] => {
   return [];
 };
 
+// Helper to validate URL for SSRF protection
+const isSafeUrl = (urlStr: string): boolean => {
+  try {
+    const url = new URL(urlStr);
+    
+    // Only allow HTTP and HTTPS
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return false;
+    }
+
+    const host = url.hostname.toLowerCase();
+
+    // Block localhost and internal names
+    if (
+      host === 'localhost' || 
+      host === '127.0.0.1' || 
+      host === '0.0.0.0' || 
+      host === '[::1]' ||
+      host.endsWith('.local') || 
+      host.endsWith('.internal')
+    ) {
+      return false;
+    }
+
+    // Simple check for private IP ranges (IPv4)
+    // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16
+    const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    const match = host.match(ipPattern);
+    if (match) {
+      const first = parseInt(match[1]);
+      const second = parseInt(match[2]);
+      if (first === 127) return false;
+      if (first === 10) return false;
+      if (first === 172 && second >= 16 && second <= 31) return false;
+      if (first === 192 && second === 168) return false;
+      if (first === 169 && second === 254) return false;
+      if (first === 0) return false;
+    }
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
 // API Route for importing recipes
 app.post('/api/import', async (req, res) => {
   let { url } = req.body;
   if (!url) return res.status(400).json({ error: 'URL is required' });
+
+  // SSRF Protection
+  if (!isSafeUrl(url)) {
+    return res.status(400).json({ error: 'Invalid or restricted URL' });
+  }
 
   try {
     const userAgents = [
