@@ -20,7 +20,7 @@ import { initializeFirestore, setLogLevel } from 'firebase/firestore';
 // circular reference errors in some terminal/logging environments.
 setLogLevel('error');
 
-import firebaseConfigLocal from '../../firebase-applet-config.json';
+import firebaseConfigLocal from '@/firebase-applet-config.json';
 
 // Use environment variables for configuration to avoid exposing secrets
 // and to support deployments where the config file is ignored.
