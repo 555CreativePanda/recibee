@@ -3,6 +3,9 @@ import path from 'path';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 import { rateLimit } from 'express-rate-limit';
+import dns from 'node:dns';
+import http from 'node:http';
+import https from 'node:https';
 
 const app = express();
 
@@ -237,8 +240,72 @@ const parseSteps = (instructions: any): any[] => {
 
 import { Address4, Address6 } from 'ip-address';
 
+const isPrivateIP = (ip: string): boolean => {
+  // IPv4 Check
+  try {
+    const v4 = new Address4(ip);
+    // Blocks 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16
+    if (
+      v4.isInSubnet(new Address4('127.0.0.0/8')) ||
+      v4.isInSubnet(new Address4('10.0.0.0/8')) ||
+      v4.isInSubnet(new Address4('172.16.0.0/12')) ||
+      v4.isInSubnet(new Address4('192.168.0.0/16')) ||
+      v4.isInSubnet(new Address4('169.254.0.0/16')) ||
+      v4.isInSubnet(new Address4('0.0.0.0/8'))
+    ) {
+      return true;
+    }
+  } catch (e) {
+    // Not a valid IPv4
+  }
+
+  // IPv6 Check
+  try {
+    const v6 = new Address6(ip);
+    // Blocks loopback (::1), link-local (fe80::/10), site-local (fec0::/10), and unique local (fc00::/7)
+    if (
+      v6.isLoopback() ||
+      v6.isLinkLocal() ||
+      ip === '::' || ip === '::0' ||
+      v6.isInSubnet(new Address6('fc00::/7')) ||
+      v6.isInSubnet(new Address6('fec0::/10'))
+    ) {
+      return true;
+    }
+  } catch (e) {
+    // Not a valid IPv6
+  }
+
+  return false;
+};
+
+// Custom DNS lookup that prevents resolving to private IPs
+const ssrfSafeLookup: any = (hostname: any, options: any, callback: any) => {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+
+  dns.lookup(hostname, options, (err, address, family) => {
+    if (err) return callback(err);
+
+    const addresses = Array.isArray(address) ? address : [{ address, family }];
+
+    for (const addr of addresses) {
+      if (isPrivateIP(addr.address)) {
+        return callback(new Error(`Access to private IP address ${addr.address} is prohibited`));
+      }
+    }
+
+    callback(err, address, family);
+  });
+};
+
+const httpAgent = new http.Agent({ lookup: ssrfSafeLookup });
+const httpsAgent = new https.Agent({ lookup: ssrfSafeLookup });
+
 // Helper to validate and sanitize URL for SSRF protection
-const getSafeUrl = (urlStr: string): string | null => {
+const getSafeUrl = async (urlStr: string): Promise<string | null> => {
   try {
     const parsed = new URL(urlStr);
     
@@ -248,7 +315,6 @@ const getSafeUrl = (urlStr: string): string | null => {
     }
 
     // 2. Port Restriction: Prevent internal port scanning by allowing only standard ports
-    // Some recipe sites might use standard ports explicitly in the URL.
     const port = parsed.port;
     if (port && port !== '80' && port !== '443') {
       return null;
@@ -257,7 +323,7 @@ const getSafeUrl = (urlStr: string): string | null => {
     const host = parsed.hostname.toLowerCase();
     if (!host) return null;
 
-    // 3. Known Blocked Hostnames (Localhost, etc.)
+    // 3. Known Blocked Hostnames
     const blockedHosts = [
       'localhost', '127.0.0.1', '127.1', '0.0.0.0', '0',
       '[::1]', '::1', '[::]', '::',
@@ -268,47 +334,30 @@ const getSafeUrl = (urlStr: string): string | null => {
       return null;
     }
 
-    // 4. Robust IP Validation (Private/Internal ranges)
-    // We check both IPv4 and IPv6 to prevent bypassing via different notation
-    
-    // IPv4 Check
+    // 4. Pre-resolve DNS to check for DNS rebinding/internal IP aliases
     try {
-      const v4 = new Address4(host);
-      // Blocks 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16
-      if (
-        v4.isInSubnet(new Address4('127.0.0.0/8')) ||
-        v4.isInSubnet(new Address4('10.0.0.0/8')) ||
-        v4.isInSubnet(new Address4('172.16.0.0/12')) ||
-        v4.isInSubnet(new Address4('192.168.0.0/16')) ||
-        v4.isInSubnet(new Address4('169.254.0.0/16')) ||
-        v4.isInSubnet(new Address4('0.0.0.0/8'))
-      ) {
-        return null;
+      const addresses = await new Promise<dns.LookupAddress[]>((resolve, reject) => {
+        dns.lookup(host, { all: true }, (err, addrs) => {
+          if (err) reject(err);
+          else resolve(addrs);
+        });
+      });
+
+      for (const addr of addresses) {
+        if (isPrivateIP(addr.address)) {
+          return null;
+        }
       }
     } catch (e) {
-      // Host is not a valid IPv4 address, which is fine if it's a domain
+      // If we can't resolve it, it's safer to block it.
+      // dns.lookup also works for IP addresses, so if it's a valid IP it should have resolved or failed correctly.
+      return null;
     }
 
-    // IPv6 Check
-    try {
-      const v6 = new Address6(host);
-      // Blocks loopback (::1), link-local (fe80::/10), site-local (fec0::/10), and unique local (fc00::/7)
-      if (
-        v6.isLoopback() ||
-        v6.isLinkLocal() ||
-        host === '::' || host === '::0' ||
-        v6.isInSubnet(new Address6('fc00::/7')) ||
-        v6.isInSubnet(new Address6('fec0::/10'))
-      ) {
-        return null;
-      }
-    } catch (e) {
-      // Host is not a valid IPv6 address
-    }
-
-    // 5. Final Sanitation: Return the normalized absolute URL string
+    // 5. Final Sanitation: Reconstruct the URL from validated parts
     // This breaks the taint by using parts filtered and reconstructed by the URL class
-    return parsed.href;
+    const safeUrl = new URL(parsed.protocol + '//' + parsed.host + parsed.pathname + parsed.search + parsed.hash);
+    return safeUrl.href;
   } catch (e) {
     return null;
   }
@@ -320,7 +369,7 @@ app.post('/api/import', async (req, res) => {
   if (!rawUrl) return res.status(400).json({ error: 'URL is required' });
 
   // SSRF Protection & URL Sanitization
-  const safeUrl = getSafeUrl(rawUrl);
+  const safeUrl = await getSafeUrl(rawUrl);
   if (!safeUrl) {
     return res.status(400).json({ error: 'Invalid or restricted URL' });
   }
@@ -346,7 +395,12 @@ app.post('/api/import', async (req, res) => {
 
     try {
       // Try direct fetch first
-      const response = await axios.get(safeUrl, { headers: getHeaders(0), timeout: 8000 });
+      const response = await axios.get(safeUrl, {
+        headers: getHeaders(0),
+        timeout: 8000,
+        httpAgent,
+        httpsAgent
+      });
       html = response.data;
     } catch (e: any) {
       const statusCode = e.response?.status;
@@ -372,7 +426,12 @@ app.post('/api/import', async (req, res) => {
       try {
         // Try AllOrigins proxy
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(safeUrl)}`;
-        const response = await axios.get(proxyUrl, { headers: getHeaders(1), timeout: 12000 });
+        const response = await axios.get(proxyUrl, {
+          headers: getHeaders(1),
+          timeout: 12000,
+          httpAgent,
+          httpsAgent
+        });
         html = response.data;
         usedProxy = true;
       } catch (e2: any) {
@@ -380,7 +439,12 @@ app.post('/api/import', async (req, res) => {
         try {
           // Try corsproxy.io as secondary fallback
           const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(safeUrl)}`;
-          const response = await axios.get(proxyUrl, { headers: getHeaders(2), timeout: 12000 });
+          const response = await axios.get(proxyUrl, {
+            headers: getHeaders(2),
+            timeout: 12000,
+            httpAgent,
+            httpsAgent
+          });
           html = response.data;
           usedProxy = true;
         } catch (e3: any) {
@@ -388,7 +452,12 @@ app.post('/api/import', async (req, res) => {
           try {
             // Final fallback: CodeTabs
             const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(safeUrl)}`;
-            const response = await axios.get(proxyUrl, { headers: getHeaders(0), timeout: 12000 });
+            const response = await axios.get(proxyUrl, {
+              headers: getHeaders(0),
+              timeout: 12000,
+              httpAgent,
+              httpsAgent
+            });
             html = response.data;
             usedProxy = true;
           } catch (e4: any) {
