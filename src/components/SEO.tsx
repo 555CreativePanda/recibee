@@ -17,7 +17,7 @@ export function SEO({
   ogImage = "https://picsum.photos/seed/recibee/1200/630",
   recipeData
 }: SEOProps) {
-  const siteTitle = title ? `${title} | ReciBee` : "ReciBee | Fork the Flavor";
+  const siteTitle = title ? `${title} | ReciBee` : "ReciBee | our Recipe, Your Way.";
   const url = canonical || window.location.href;
 
   return (
