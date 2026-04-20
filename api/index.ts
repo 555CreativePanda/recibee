@@ -2,8 +2,20 @@ import express from 'express';
 import path from 'path';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
+import { rateLimit } from 'express-rate-limit';
 
 const app = express();
+
+// Rate limiting to prevent DOS attacks - applied to all routes
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+app.use(limiter);
 
 // Trust proxy for Vercel
 app.set('trust proxy', 1);
