@@ -235,58 +235,57 @@ const parseSteps = (instructions: any): any[] => {
   return [];
 };
 
-// Helper to validate URL for SSRF protection
-const isSafeUrl = (urlStr: string): boolean => {
+// Helper to validate and sanitize URL for SSRF protection
+const getSafeUrl = (urlStr: string): string | null => {
   try {
-    const url = new URL(urlStr);
+    const parsed = new URL(urlStr);
     
     // Only allow HTTP and HTTPS
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      return false;
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
     }
 
-    const host = url.hostname.toLowerCase();
+    const host = parsed.hostname.toLowerCase();
 
-    // Block localhost and internal names
+    // Block localhost, loopback, and internal names
+    const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]', '::1'];
     if (
-      host === 'localhost' || 
-      host === '127.0.0.1' || 
-      host === '0.0.0.0' || 
-      host === '[::1]' ||
+      blockedHosts.includes(host) || 
       host.endsWith('.local') || 
       host.endsWith('.internal')
     ) {
-      return false;
+      return null;
     }
 
-    // Simple check for private IP ranges (IPv4)
-    // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16
+    // Check for private IP ranges (IPv4)
     const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
     const match = host.match(ipPattern);
     if (match) {
-      const first = parseInt(match[1]);
-      const second = parseInt(match[2]);
-      if (first === 127) return false;
-      if (first === 10) return false;
-      if (first === 172 && second >= 16 && second <= 31) return false;
-      if (first === 192 && second === 168) return false;
-      if (first === 169 && second === 254) return false;
-      if (first === 0) return false;
+      const p1 = parseInt(match[1], 10);
+      const p2 = parseInt(match[2], 10);
+      if (p1 === 127) return null; // 127.0.0.0/8
+      if (p1 === 10) return null;  // 10.0.0.0/8
+      if (p1 === 172 && p2 >= 16 && p2 <= 31) return null; // 172.16.0.0/12
+      if (p1 === 192 && p2 === 168) return null; // 192.168.0.0/16
+      if (p1 === 169 && p2 === 254) return null; // 169.254.0.0/16
+      if (p1 === 0) return null;   // 0.0.0.0/8
     }
 
-    return true;
+    // Return sanitized absolute URL string to break taint
+    return parsed.href;
   } catch (e) {
-    return false;
+    return null;
   }
 };
 
 // API Route for importing recipes
 app.post('/api/import', async (req, res) => {
-  let { url } = req.body;
-  if (!url) return res.status(400).json({ error: 'URL is required' });
+  const { url: rawUrl } = req.body;
+  if (!rawUrl) return res.status(400).json({ error: 'URL is required' });
 
-  // SSRF Protection
-  if (!isSafeUrl(url)) {
+  // SSRF Protection & URL Sanitization
+  const safeUrl = getSafeUrl(rawUrl);
+  if (!safeUrl) {
     return res.status(400).json({ error: 'Invalid or restricted URL' });
   }
 
@@ -311,7 +310,7 @@ app.post('/api/import', async (req, res) => {
 
     try {
       // Try direct fetch first
-      const response = await axios.get(url, { headers: getHeaders(0), timeout: 8000 });
+      const response = await axios.get(safeUrl, { headers: getHeaders(0), timeout: 8000 });
       html = response.data;
     } catch (e: any) {
       const statusCode = e.response?.status;
@@ -322,49 +321,49 @@ app.post('/api/import', async (req, res) => {
         'halfbakedharvest.com', 'epicurious.com', 'food52.com', 'allrecipes.com',
         'simplyrecipes.com', 'delish.com', 'thepioneerwoman.com'
       ];
-      if ((statusCode === 402 || statusCode === 403) && knownProtected.some(p => url.includes(p))) {
-        console.info(`[Scraper] Known protection on ${url} (Status ${statusCode}). Switching to AI URL import.`);
+      if ((statusCode === 402 || statusCode === 403) && knownProtected.some(p => safeUrl.includes(p))) {
+        console.info(`[Scraper] Known protection on ${safeUrl} (Status ${statusCode}). Switching to AI URL import.`);
         return res.json({ 
           needsAI: true, 
           rawText: '', 
           useUrlContext: true,
-          url: url,
+          url: safeUrl,
           title: 'Importing via AI...' 
         });
       }
 
-      console.info(`Direct fetch for ${url} skipped partially: ${e.message}. Trying primary proxy...`);
+      console.info(`Direct fetch for ${safeUrl} skipped partially: ${e.message}. Trying primary proxy...`);
       try {
         // Try AllOrigins proxy
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(safeUrl)}`;
         const response = await axios.get(proxyUrl, { headers: getHeaders(1), timeout: 12000 });
         html = response.data;
         usedProxy = true;
       } catch (e2: any) {
-        console.info(`Primary proxy for ${url} unavailable. Trying secondary proxy...`);
+        console.info(`Primary proxy for ${safeUrl} unavailable. Trying secondary proxy...`);
         try {
           // Try corsproxy.io as secondary fallback
-          const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+          const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(safeUrl)}`;
           const response = await axios.get(proxyUrl, { headers: getHeaders(2), timeout: 12000 });
           html = response.data;
           usedProxy = true;
         } catch (e3: any) {
-          console.info(`Secondary proxy for ${url} unavailable. Trying final fallback...`);
+          console.info(`Secondary proxy for ${safeUrl} unavailable. Trying final fallback...`);
           try {
             // Final fallback: CodeTabs
-            const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+            const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(safeUrl)}`;
             const response = await axios.get(proxyUrl, { headers: getHeaders(0), timeout: 12000 });
             html = response.data;
             usedProxy = true;
           } catch (e4: any) {
-            console.info(`All standard fetch attempts exhausted for ${url}. Reverting to AI URL Context.`);
+            console.info(`All standard fetch attempts exhausted for ${safeUrl}. Reverting to AI URL Context.`);
             
             // If fetching fails completely, return a signal to the frontend to try Gemini's URL Context tool
             return res.json({ 
               needsAI: true, 
               rawText: '', // No text fetched
               useUrlContext: true,
-              url: url,
+              url: safeUrl,
               title: 'Attempting AI URL Import...' 
             });
           }
