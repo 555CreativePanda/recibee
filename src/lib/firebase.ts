@@ -20,7 +20,10 @@ import { initializeFirestore, setLogLevel } from 'firebase/firestore';
 // circular reference errors in some terminal/logging environments.
 setLogLevel('error');
 
-import firebaseConfigLocal from '@/firebase-applet-config.json';
+// Load local config safely without failing if it's missing (e.g. in prod CI)
+// Using glob with eager:true allows us to check for the file's existence without a static import error
+const localConfigs = import.meta.glob('../../firebase-applet-config.json', { eager: true, import: 'default' });
+const firebaseConfigLocal: any = localConfigs['../../firebase-applet-config.json'] || {};
 
 // Use environment variables for configuration to avoid exposing secrets
 // and to support deployments where the config file is ignored.
