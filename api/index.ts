@@ -235,43 +235,79 @@ const parseSteps = (instructions: any): any[] => {
   return [];
 };
 
+import { Address4, Address6 } from 'ip-address';
+
 // Helper to validate and sanitize URL for SSRF protection
 const getSafeUrl = (urlStr: string): string | null => {
   try {
     const parsed = new URL(urlStr);
     
-    // Only allow HTTP and HTTPS
+    // 1. Protocol Restriction: Only http: and https:
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return null;
     }
 
-    const host = parsed.hostname.toLowerCase();
-
-    // Block localhost, loopback, and internal names
-    const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]', '::1'];
-    if (
-      blockedHosts.includes(host) || 
-      host.endsWith('.local') || 
-      host.endsWith('.internal')
-    ) {
+    // 2. Port Restriction: Prevent internal port scanning by allowing only standard ports
+    // Some recipe sites might use standard ports explicitly in the URL.
+    const port = parsed.port;
+    if (port && port !== '80' && port !== '443') {
       return null;
     }
 
-    // Check for private IP ranges (IPv4)
-    const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-    const match = host.match(ipPattern);
-    if (match) {
-      const p1 = parseInt(match[1], 10);
-      const p2 = parseInt(match[2], 10);
-      if (p1 === 127) return null; // 127.0.0.0/8
-      if (p1 === 10) return null;  // 10.0.0.0/8
-      if (p1 === 172 && p2 >= 16 && p2 <= 31) return null; // 172.16.0.0/12
-      if (p1 === 192 && p2 === 168) return null; // 192.168.0.0/16
-      if (p1 === 169 && p2 === 254) return null; // 169.254.0.0/16
-      if (p1 === 0) return null;   // 0.0.0.0/8
+    const host = parsed.hostname.toLowerCase();
+    if (!host) return null;
+
+    // 3. Known Blocked Hostnames (Localhost, etc.)
+    const blockedHosts = [
+      'localhost', '127.0.0.1', '127.1', '0.0.0.0', '0',
+      '[::1]', '::1', '[::]', '::',
+      'metadata.google.internal', 'metadata', 'instance-data'
+    ];
+    
+    if (blockedHosts.includes(host) || host.endsWith('.local') || host.endsWith('.internal')) {
+      return null;
     }
 
-    // Return sanitized absolute URL string to break taint
+    // 4. Robust IP Validation (Private/Internal ranges)
+    // We check both IPv4 and IPv6 to prevent bypassing via different notation
+    
+    // IPv4 Check
+    try {
+      const v4 = new Address4(host);
+      // Blocks 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16
+      if (
+        v4.isInSubnet(new Address4('127.0.0.0/8')) ||
+        v4.isInSubnet(new Address4('10.0.0.0/8')) ||
+        v4.isInSubnet(new Address4('172.16.0.0/12')) ||
+        v4.isInSubnet(new Address4('192.168.0.0/16')) ||
+        v4.isInSubnet(new Address4('169.254.0.0/16')) ||
+        v4.isInSubnet(new Address4('0.0.0.0/8'))
+      ) {
+        return null;
+      }
+    } catch (e) {
+      // Host is not a valid IPv4 address, which is fine if it's a domain
+    }
+
+    // IPv6 Check
+    try {
+      const v6 = new Address6(host);
+      // Blocks loopback (::1), link-local (fe80::/10), site-local (fec0::/10), and unique local (fc00::/7)
+      if (
+        v6.isLoopback() ||
+        v6.isLinkLocal() ||
+        host === '::' || host === '::0' ||
+        v6.isInSubnet(new Address6('fc00::/7')) ||
+        v6.isInSubnet(new Address6('fec0::/10'))
+      ) {
+        return null;
+      }
+    } catch (e) {
+      // Host is not a valid IPv6 address
+    }
+
+    // 5. Final Sanitation: Return the normalized absolute URL string
+    // This breaks the taint by using parts filtered and reconstructed by the URL class
     return parsed.href;
   } catch (e) {
     return null;
