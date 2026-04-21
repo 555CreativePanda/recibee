@@ -766,7 +766,7 @@ function AppContent() {
                   placeholder="Search your recipes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 pl-10 pr-4 py-2.5 text-sm rounded-2xl outline-none focus:border-orange-600 focus:ring-1 focus:ring-orange-600 transition-all"
+                  className="w-full bg-stone-100 border-none pl-10 pr-4 py-3 text-sm rounded-2xl outline-none focus:bg-white focus:shadow-md transition-all placeholder:text-stone-400"
                 />
               </div>
             </div>

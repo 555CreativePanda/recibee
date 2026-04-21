@@ -335,23 +335,26 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                   isStarred ? "text-kitchen-primary" : "hover:text-kitchen-primary"
                 )}
               >
-                <Star size={14} className="md:w-[16px]" fill={isStarred ? "currentColor" : "none"} />
+                <Star size={14} strokeWidth={2.5} className="md:w-[16px]" fill={isStarred ? "currentColor" : "none"} />
                 <span>{localStarCount}</span>
               </button>
               
               <div className="flex items-center gap-2 hover:text-kitchen-primary cursor-pointer">
-                <Users size={14} className="md:w-[16px]" />
+                <Users size={14} strokeWidth={2.5} className="md:w-[16px]" />
                 <span>{recipe.fork_count || 0}</span>
               </div>
 
               {recipe.parent_id && (
-                <button 
-                  onClick={() => scrollToRecipe(recipe.parent_id!)}
-                  className="flex items-center gap-2 text-kitchen-primary hover:underline truncate max-w-[250px]"
-                >
-                  <Pencil size={12} className="md:w-[14px] rotate-[-45deg] shrink-0" />
-                  <span className="truncate">Tweak of {recipe.parent_title || recipe.parent_id.slice(0, 8)}</span>
-                </button>
+                <>
+                  <div className="h-4 w-[1px] bg-stone-200 hidden sm:block mx-1" />
+                  <button 
+                    onClick={() => scrollToRecipe(recipe.parent_id!)}
+                    className="flex items-center gap-2 text-stone-600 font-medium bg-orange-50/50 px-2.5 py-1 rounded-lg border border-orange-100/50 hover:bg-orange-100/50 transition-all truncate max-w-[250px] group/lineage"
+                  >
+                    <Pencil size={12} className="md:w-[14px] rotate-[-45deg] shrink-0 text-kitchen-primary group-hover/lineage:scale-110 transition-transform" />
+                    <span className="truncate">Tweak of {recipe.parent_title || recipe.parent_id.slice(0, 8)}</span>
+                  </button>
+                </>
               )}
             </div>
 
@@ -464,10 +467,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
       </AnimatePresence>
 
       <div 
-        className="px-4 md:px-8 py-3 md:py-4 flex items-center gap-2 md:gap-3 cursor-pointer hover:bg-stone-50 transition-all text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-kitchen-muted"
+        className="px-4 md:px-8 py-3 md:py-4 flex items-center gap-2 md:gap-3 cursor-pointer bg-stone-50/80 hover:bg-stone-100 transition-all text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-kitchen-muted border-t border-kitchen-border"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        {isExpanded ? <ChevronDown size={14} className="md:w-[16px]" /> : <ChevronRight size={14} className="md:w-[16px]" />}
+        {isExpanded ? <ChevronDown size={14} className="md:w-[16px]" strokeWidth={2.5} /> : <ChevronRight size={14} className="md:w-[16px]" strokeWidth={2.5} />}
         <span>{isExpanded ? 'Hide' : 'Show'} Recipe Details</span>
       </div>
 
