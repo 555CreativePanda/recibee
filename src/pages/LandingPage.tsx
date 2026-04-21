@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 
 export function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mockupView, setMockupView] = useState<'before' | 'after'>('after');
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -191,31 +192,107 @@ export function LandingPage() {
             >
               <div className="relative aspect-[4/3] w-full max-w-lg mx-auto">
                 {/* Before: Cluttered Blog */}
-                <div className="absolute inset-0 bg-white rounded-[2rem] shadow-2xl border border-kitchen-border overflow-hidden blur-[2px] opacity-40 scale-95 -translate-x-12 hover:-translate-x-8 transition-transform duration-700">
-                  <div className="h-20 bg-stone-100 border-b border-stone-200" />
-                  <div className="p-8 space-y-6">
-                    <div className="h-48 bg-stone-200 rounded-2xl" />
-                    <div className="flex gap-4">
-                      <div className="h-4 bg-red-100 w-1/4 rounded animate-pulse" />
-                      <div className="h-4 bg-red-100 w-1/4 rounded animate-pulse" />
+                <motion.div 
+                  animate={{
+                    x: mockupView === 'before' ? 0 : -48,
+                    scale: mockupView === 'before' ? 1.05 : 0.95,
+                    opacity: mockupView === 'before' ? 1 : 0.3,
+                    filter: mockupView === 'before' ? 'blur(2px)' : 'blur(8px)',
+                    zIndex: mockupView === 'before' ? 30 : 10
+                  }}
+                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  onClick={() => setMockupView('before')}
+                  className="absolute inset-0 bg-white rounded-[2rem] shadow-2xl border border-kitchen-border overflow-hidden cursor-pointer"
+                >
+                  <div className="absolute inset-0 flex flex-col">
+                    {/* Fake Browser Header */}
+                    <div className="h-12 bg-stone-100 border-b border-stone-200 flex items-center px-4 gap-2">
+                      <div className="flex gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-stone-300" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-stone-300" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-stone-300" />
+                      </div>
+                      <div className="flex-1 bg-white h-6 rounded-md border border-stone-200 ml-4 flex items-center px-3">
+                        <div className="w-full h-1 bg-stone-100 rounded" />
+                      </div>
                     </div>
-                    <div className="space-y-3">
-                      <div className="h-4 bg-stone-100 w-full rounded" />
-                      <div className="h-4 bg-stone-100 w-5/6 rounded" />
-                      <div className="h-4 bg-stone-100 w-4/6 rounded" />
-                    </div>
-                    <div className="h-32 bg-stone-100 rounded-2xl flex items-center justify-center text-red-300 font-bold uppercase tracking-widest text-[10px]">
-                      Advertisement
+
+                    {/* Blog Content with Specific Noisy Elements */}
+                    <div className="flex-1 relative overflow-hidden bg-white">
+                      <div className="p-8 space-y-6">
+                        <div className="flex justify-between items-center">
+                          <div className="h-8 w-32 bg-stone-100" />
+                          <div className="h-6 w-48 bg-stone-50" />
+                        </div>
+                        <div className="h-10 w-3/4 bg-stone-200 rounded" />
+                        <div className="grid grid-cols-3 gap-6">
+                          <div className="col-span-2 space-y-6">
+                            <img 
+                              src="https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=2070&auto=format&fit=crop" 
+                              alt="Ultimate Lasagna"
+                              className="w-full h-64 object-cover rounded-xl"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="space-y-3">
+                              <div className="h-4 bg-stone-100 w-full" />
+                              <div className="h-4 bg-stone-100 w-full" />
+                              <div className="h-4 bg-stone-100 w-5/6" />
+                              <div className="h-4 bg-stone-100 w-4/6" />
+                            </div>
+                          </div>
+                          {/* Sidebar Ads */}
+                          <div className="space-y-4">
+                            <div className="aspect-square bg-blue-100 rounded-lg flex flex-col items-center justify-center p-4 text-center border-2 border-blue-200 relative">
+                              <div className="absolute -top-2 -right-2 bg-stone-400 text-white text-[6px] px-1 rounded uppercase">Ad</div>
+                              <div className="text-[10px] font-black text-blue-600 leading-tight">SAVE 30% NOW AUTO INSURANCE</div>
+                              <div className="mt-2 text-[8px] bg-blue-600 text-white px-2 py-1 rounded">LEARN MORE</div>
+                            </div>
+                            <div className="aspect-[4/5] bg-red-50 rounded-lg border-2 border-red-100 p-4 flex flex-col items-center justify-center relative overflow-hidden">
+                              <div className="absolute -top-2 -right-2 bg-stone-400 text-white text-[6px] px-1 rounded uppercase">Ad</div>
+                              <div className="bg-red-600 text-white text-[8px] font-bold px-2 py-0.5 rounded rotate-12 absolute top-2 right-2">50% OFF</div>
+                              <div className="mt-auto text-[10px] font-black text-red-600 leading-tight">KITCHEN PRO 5000</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* The Big Newsletter Popup from Screenshot */}
+                      <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-[1px] flex items-center justify-center p-12">
+                        <div className="bg-[#0099e5] text-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center relative pointer-events-none">
+                          <div className="absolute top-4 right-4 text-white/60">✕</div>
+                          <h3 className="text-xl font-black mb-2 uppercase italic tracking-tighter">Stay Connected!</h3>
+                          <p className="text-xs mb-6 text-blue-50">Sign up for our Newsletter!</p>
+                          <div className="space-y-3">
+                            <div className="h-10 bg-white/20 rounded-lg border border-white/30" />
+                            <div className="h-10 bg-white/20 rounded-lg border border-white/30" />
+                            <div className="h-12 bg-white text-[#0099e5] font-black uppercase tracking-widest flex items-center justify-center rounded-lg shadow-lg">JOIN NOW!</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Cookie Notice Footer */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-stone-900/90 text-white text-[8px] p-2 flex items-center justify-between">
+                        <span>We use cookies to improve your messy experience...</span>
+                        <div className="bg-kitchen-primary px-3 py-1 rounded-sm">ACCEPT</div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* After: ReciBee Card */}
                 <motion.div 
                   initial={{ rotateY: 20, x: 20 }}
-                  animate={{ rotateY: 0, x: 0 }}
-                  transition={{ duration: 1.5, delay: 0.8, ease: "easeOut" }}
-                  className="absolute inset-0 bg-white rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(234,88,12,0.15)] border-4 border-white overflow-hidden z-20 transform perspective-1000 group-hover:scale-105 transition-transform duration-500"
+                  animate={{ 
+                    rotateY: mockupView === 'after' ? 0 : 5,
+                    x: mockupView === 'after' ? 0 : 48,
+                    scale: mockupView === 'after' ? 1 : 0.9,
+                    opacity: mockupView === 'after' ? 1 : 0.3,
+                    filter: mockupView === 'after' ? 'blur(0px)' : 'blur(4px)',
+                    zIndex: mockupView === 'after' ? 30 : 20
+                  }}
+                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  onClick={() => setMockupView('after')}
+                  className="absolute inset-0 bg-white rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(234,88,12,0.15)] border-4 border-white overflow-hidden transform perspective-1000 cursor-pointer"
                 >
                   <div className="h-full flex flex-col">
                     {/* Fake Header */}
@@ -268,10 +345,29 @@ export function LandingPage() {
                   </div>
                 </motion.div>
                 
-                {/* Labels */}
-                <div className="absolute -bottom-8 left-0 right-0 flex justify-between px-6 z-30">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-kitchen-muted bg-white/80 backdrop-blur px-3 py-1 rounded-lg border border-kitchen-border">The Blog Noise</span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-kitchen-primary bg-white/80 backdrop-blur px-3 py-1 rounded-lg border border-orange-100">Pure ReciBee</span>
+                {/* Labels / Toggles */}
+                <div className="absolute -bottom-16 left-0 right-0 flex justify-center gap-4 z-40">
+                  <button 
+                    onClick={() => setMockupView('before')}
+                    className={`text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl border transition-all duration-300 ${
+                      mockupView === 'before' 
+                        ? 'text-white bg-kitchen-text border-kitchen-text shadow-lg scale-110' 
+                        : 'text-kitchen-muted bg-white/80 backdrop-blur border-kitchen-border hover:bg-stone-50'
+                    }`}
+                  >
+                    The Blog Noise
+                  </button>
+                  <div className="w-[1px] h-8 bg-kitchen-border self-center" />
+                  <button 
+                    onClick={() => setMockupView('after')}
+                    className={`text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl border transition-all duration-300 ${
+                      mockupView === 'after' 
+                        ? 'text-white bg-kitchen-primary border-kitchen-primary shadow-lg scale-110' 
+                        : 'text-kitchen-muted bg-white/80 backdrop-blur border-kitchen-border hover:bg-stone-50 shadow-sm'
+                    }`}
+                  >
+                    Pure ReciBee
+                  </button>
                 </div>
               </div>
             </motion.div>
