@@ -175,10 +175,11 @@ export function LandingPage() {
                   <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link 
-                  to="/docs" 
+                  to="/explore" 
                   className="flex items-center justify-center gap-3 border border-kitchen-border hover:bg-white text-kitchen-text px-10 py-5 text-lg font-medium rounded-2xl transition-all backdrop-blur-sm shadow-sm active:scale-95"
                 >
-                  See how it works
+                  <ChefHat size={20} strokeWidth={1.5} />
+                  Explore Recipes
                 </Link>
               </motion.div>
             </motion.div>
