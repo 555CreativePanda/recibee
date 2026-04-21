@@ -1,6 +1,6 @@
 import React from 'react';
 import { Recipe } from '../types';
-import { GitFork, ChevronRight, User } from 'lucide-react';
+import { ChefHat, ChevronRight, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
@@ -38,7 +38,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ recipe, allRecipes, level }) => {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4 min-w-0">
               <div className="bg-stone-50 p-2 rounded-xl group-hover:bg-orange-50 transition-colors">
-                <GitFork size={16} className="text-kitchen-primary" />
+                <ChefHat size={16} className="text-kitchen-primary" />
               </div>
               <div className="flex flex-col min-w-0">
                 <Link 
@@ -89,7 +89,7 @@ export const ForkTree: React.FC<ForkTreeProps> = ({ currentRecipeId, allRecipes 
   if (children.length === 0) {
     return (
       <div className="border-2 border-dashed border-stone-200 rounded-3xl p-16 text-center bg-stone-50/30">
-        <GitFork size={40} className="mx-auto text-stone-200 mb-4" />
+        <ChefHat size={40} className="mx-auto text-stone-200 mb-4" />
         <p className="text-kitchen-muted font-medium">No tweaks yet. Be the first to tweak this recipe!</p>
       </div>
     );

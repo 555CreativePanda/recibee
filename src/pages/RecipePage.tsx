@@ -5,7 +5,7 @@ import { collection, query, where, onSnapshot, orderBy, doc, getDocs, limit } fr
 import { Recipe } from '../types';
 import { RecipeCard } from '../components/RecipeCard';
 import { RecipeEditor } from '../components/RecipeEditor';
-import { Loader2, ArrowLeft, GitFork } from 'lucide-react';
+import { Loader2, ArrowLeft, ChefHat } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getRecipe, forkRecipe, saveRecipe, getChildForks } from '../services/recipeService';
 import { SEO } from '../components/SEO';
@@ -229,7 +229,7 @@ export function RecipePage({ user, ensureAuth, setNotification, starredRecipeIds
             <div className="space-y-8">
               <div className="flex items-center gap-4 border-b border-kitchen-border pb-6">
                 <div className="bg-stone-100 p-2 rounded-xl">
-                  <GitFork size={24} className="text-kitchen-primary" />
+                  <ChefHat size={24} className="text-kitchen-primary" />
                 </div>
                 <h3 className="text-2xl font-serif font-bold text-kitchen-text">Recipe Lineage</h3>
               </div>

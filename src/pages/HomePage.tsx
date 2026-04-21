@@ -3,7 +3,7 @@ import { db } from '../lib/firebase';
 import { Recipe } from '../types';
 import { RecipeCard } from '../components/RecipeCard';
 import { cn } from '../lib/utils';
-import { Plus, Database, GitBranch, Filter, ChevronLeft, ChevronRight, Loader2, ChefHat } from 'lucide-react';
+import { Plus, Database, Filter, ChevronLeft, ChevronRight, Loader2, ChefHat } from 'lucide-react';
 import { motion } from 'motion/react';
 import { SEO } from '../components/SEO';
 import { getRecipesPaginated, getRecipesByIds, getTabCache, setTabCache, getRecipesCount } from '../services/recipeService';
@@ -273,7 +273,7 @@ export function HomePage({
 
         <div className="flex items-center gap-4 text-xs md:text-sm text-kitchen-muted font-bold uppercase tracking-widest pb-4">
           <div className="flex items-center gap-2">
-            <GitBranch size={16} className="text-kitchen-primary" />
+            <ChefHat size={16} className="text-kitchen-primary" />
             {totalCount === null ? (
               <div className="w-8 h-4 bg-stone-100 animate-pulse rounded" />
             ) : (
@@ -283,7 +283,7 @@ export function HomePage({
           <div className="h-4 w-[1px] bg-kitchen-border" />
           <div className="flex items-center gap-2">
             <Filter size={16} className="text-kitchen-primary" />
-            <span>All branches</span>
+            <span>All Versions</span>
           </div>
         </div>
       </div>

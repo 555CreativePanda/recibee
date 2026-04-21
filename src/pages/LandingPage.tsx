@@ -1,6 +1,6 @@
 import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { ChefHat, GitBranch, Download, Star, Users, ArrowRight, Github, Globe, Zap, Code, Terminal, Search, Shield, Menu, X as CloseIcon } from 'lucide-react';
+import { ChefHat, Download, Star, Users, ArrowRight, Github, Globe, Zap, Code, Terminal, Search, Shield, Menu, X as CloseIcon, Pencil } from 'lucide-react';
 import { SEO } from '../components/SEO';
 import { useRef, useState } from 'react';
 
@@ -236,7 +236,7 @@ export function LandingPage() {
             <div className="grid grid-cols-2 gap-4">
               {[
                 { icon: Download, title: 'Import', desc: 'Scrape the noise from any food blog instantly.' },
-                { icon: GitBranch, title: 'Tweak', desc: 'Save your own version of any dish you find.' },
+                { icon: ChefHat, title: 'Tweak', desc: 'Save your own version of any dish you find.' },
                 { icon: Search, title: 'Explore', desc: 'Find the ultimate community-tested recipes.' },
                 { icon: Shield, title: 'Private', desc: 'Your recipe box, your rules, your kitchen.' }
               ].map((item, i) => (
@@ -290,7 +290,7 @@ export function LandingPage() {
                       </span>
                     </div>
                     <button className="flex items-center gap-2 bg-stone-50 border border-kitchen-border px-4 py-2 rounded-xl text-xs font-bold text-kitchen-text hover:bg-stone-100 transition-colors">
-                      <GitBranch size={14} />
+                      <Pencil size={14} />
                       TWEAK
                     </button>
                   </div>
@@ -304,15 +304,15 @@ export function LandingPage() {
 
                   <div className="flex flex-wrap items-center gap-6 text-xs text-kitchen-muted font-bold">
                     <div className="flex items-center gap-1.5">
-                      <Star size={14} />
-                      <span>12 likes</span>
+                      <Users size={14} />
+                      <span>{12} likes</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <GitBranch size={14} />
+                      <ChefHat size={14} />
                       <span>4 copies</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-kitchen-primary">
-                      <GitBranch size={14} className="rotate-180" />
+                      <ChefHat size={14} className="rotate-180" />
                       <span>from Original Recipe</span>
                     </div>
                     <div className="flex items-center gap-1.5 ml-auto">
@@ -337,7 +337,7 @@ export function LandingPage() {
                       <span className="px-2 py-0.5 border border-kitchen-border text-[10px] font-bold text-kitchen-muted uppercase tracking-wider rounded-lg">Public</span>
                     </div>
                     <button className="flex items-center gap-2 bg-stone-50 border border-kitchen-border px-4 py-2 rounded-xl text-xs font-bold text-kitchen-text hover:bg-stone-100 transition-colors">
-                      <GitBranch size={14} />
+                      <Pencil size={14} />
                       TWEAK
                     </button>
                   </div>
@@ -355,7 +355,7 @@ export function LandingPage() {
                       <span>45 likes</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <GitBranch size={14} />
+                      <ChefHat size={14} />
                       <span>18 copies</span>
                     </div>
                     <div className="flex items-center gap-1.5 ml-auto">

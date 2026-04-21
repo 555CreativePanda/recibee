@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { ChefHat, GitBranch, Download, Star, Users, ArrowLeft, Book, Code, Zap, Database, Search, Shield } from 'lucide-react';
+import { ChefHat, Download, Star, Users, ArrowLeft, Book, Code, Zap, Database, Search, Shield } from 'lucide-react';
 import { SEO } from '../components/SEO';
 
 export function DocumentationPage() {
@@ -20,7 +20,7 @@ export function DocumentationPage() {
     {
       id: 'forking',
       title: 'Tweaking',
-      icon: <GitBranch className="text-kitchen-primary" />,
+      icon: <ChefHat className="text-kitchen-primary" />,
       content: 'Found a recipe but want to make it your own? Use the "Tweak" feature. This creates a personal copy of the recipe in your notebook. You can then modify ingredients or steps while maintaining a link to the original "parent" recipe.'
     },
     {

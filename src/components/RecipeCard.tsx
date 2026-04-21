@@ -1,4 +1,4 @@
-import { GitFork, Edit2, ChevronRight, ChevronDown, Star, Globe, Lock, ExternalLink, Trash2, AlertTriangle, Loader2, X } from 'lucide-react';
+import { ChefHat, Edit2, ChevronRight, ChevronDown, Star, Globe, Lock, ExternalLink, Trash2, AlertTriangle, Loader2, X, Pencil, Users } from 'lucide-react';
 import { Recipe, Ingredient, Step } from '../types';
 import { cn, safeStringify } from '../lib/utils';
 import React, { useState, useEffect } from 'react';
@@ -269,7 +269,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                 }}
                 className="flex flex-1 sm:flex-none items-center justify-center gap-2 bg-kitchen-primary hover:bg-orange-700 text-white px-4 md:px-5 py-2 md:py-2.5 text-[10px] md:text-xs font-bold transition-all rounded-xl md:rounded-2xl shadow-lg shadow-orange-100 uppercase tracking-widest active:scale-95"
               >
-                <GitFork size={14} className="md:w-[16px]" />
+                <Pencil size={14} className="md:w-[16px]" />
                 TWEAK
               </button>
               
@@ -300,23 +300,27 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
           {/* Line 2: Identity & Date */}
           <div className="flex flex-col gap-2">
-            <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 min-w-0">
-              <span 
-                onClick={() => onUserClick?.(recipe.user_id)}
-                className="text-kitchen-primary hover:underline cursor-pointer font-bold text-xs md:text-sm shrink-0 uppercase tracking-widest"
-              >
-                @{userHandle}
-              </span>
-              <span className="hidden sm:inline text-stone-300 shrink-0 font-light">/</span>
+            <div className="flex flex-col gap-1 min-w-0">
               <Link 
                 to={`/recipe/${recipe.id}`}
-                className="text-kitchen-text font-serif font-bold text-2xl md:text-3xl hover:text-kitchen-primary transition-colors truncate leading-tight overflow-hidden text-ellipsis"
+                className="text-kitchen-text font-serif font-bold text-3xl md:text-5xl hover:text-kitchen-primary transition-colors leading-tight overflow-hidden text-ellipsis"
               >
                 {recipe.title}
               </Link>
+              <div className="flex items-center gap-2">
+                <span className="text-kitchen-muted font-sans font-medium text-xs md:text-sm uppercase tracking-widest">
+                  by
+                </span>
+                <span 
+                  onClick={() => onUserClick?.(recipe.user_id)}
+                  className="text-stone-500 hover:text-kitchen-primary cursor-pointer font-bold text-xs md:text-sm uppercase tracking-widest transition-colors"
+                >
+                  @{userHandle}
+                </span>
+              </div>
             </div>
             
-            <div className="text-[9px] md:text-[10px] font-bold text-kitchen-muted shrink-0 uppercase tracking-[0.2em]">
+            <div className="text-[9px] md:text-[10px] font-bold text-kitchen-muted shrink-0 uppercase tracking-[0.2em] mt-1">
               Updated <span className="text-kitchen-text">{formatUpdateDate(recipe.updated_at || recipe.created_at)}</span>
             </div>
           </div>
@@ -332,21 +336,21 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                 )}
               >
                 <Star size={14} className="md:w-[16px]" fill={isStarred ? "currentColor" : "none"} />
-                <span>{localStarCount} <span className="hidden xs:inline">likes</span><span className="xs:hidden">L</span></span>
+                <span>{localStarCount}</span>
               </button>
               
               <div className="flex items-center gap-2 hover:text-kitchen-primary cursor-pointer">
-                <GitFork size={14} className="md:w-[16px]" />
-                <span>{recipe.fork_count || 0} <span className="hidden xs:inline">copies</span><span className="xs:hidden">C</span></span>
+                <Users size={14} className="md:w-[16px]" />
+                <span>{recipe.fork_count || 0}</span>
               </div>
 
               {recipe.parent_id && (
                 <button 
                   onClick={() => scrollToRecipe(recipe.parent_id!)}
-                  className="flex items-center gap-2 text-kitchen-primary hover:underline truncate max-w-[200px]"
+                  className="flex items-center gap-2 text-kitchen-primary hover:underline truncate max-w-[250px]"
                 >
-                  <GitFork size={14} className="md:w-[16px] rotate-180 shrink-0" />
-                  <span className="truncate">from {recipe.parent_user_id ? `@${recipe.parent_user_id.slice(0, 8)} / ` : ''}{recipe.parent_title || recipe.parent_id.slice(0, 8)}</span>
+                  <Pencil size={12} className="md:w-[14px] rotate-[-45deg] shrink-0" />
+                  <span className="truncate">Tweak of {recipe.parent_title || recipe.parent_id.slice(0, 8)}</span>
                 </button>
               )}
             </div>
@@ -682,10 +686,15 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                         className="flex items-center justify-between p-4 md:p-5 text-[13px] md:text-sm bg-white border border-kitchen-border rounded-xl md:rounded-2xl hover:border-kitchen-primary hover:shadow-xl transition-all group active:scale-[0.98] text-left"
                       >
                         <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                          <GitFork size={16} className="text-kitchen-primary shrink-0" />
-                          <span className="font-bold text-kitchen-muted uppercase tracking-widest text-[10px] md:text-[11px] truncate">
-                            @{fork.user_id.slice(0, 8)} / <span className="font-serif font-bold text-kitchen-text text-sm md:text-base normal-case tracking-normal">{fork.title}</span>
-                          </span>
+                          <ChefHat size={16} className="text-kitchen-primary shrink-0" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-serif font-bold text-kitchen-text text-sm md:text-base truncate">
+                              {fork.title}
+                            </span>
+                            <span className="text-[9px] md:text-[10px] font-bold text-kitchen-muted uppercase tracking-widest">
+                              by @{fork.user_id.slice(0, 8)}
+                            </span>
+                          </div>
                         </div>
                         <ChevronRight size={18} className="text-stone-300 group-hover:text-kitchen-primary transition-colors shrink-0" />
                       </button>

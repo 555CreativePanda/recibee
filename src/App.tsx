@@ -7,7 +7,7 @@ import { GoogleGenAI } from '@google/genai';
 import { RecipeEditor } from './components/RecipeEditor';
 import { AuthModal } from './components/AuthModal';
 import { cn, safeStringify } from './lib/utils';
-import { Plus, ChefHat, Search, Filter, GitBranch, Download, X, Loader2, LogIn, LogOut, User as UserIcon, Database, AlertCircle, Copy, CheckCircle2 } from 'lucide-react';
+import { Plus, ChefHat, Search, Filter, Download, X, Loader2, LogIn, LogOut, User as UserIcon, Database, AlertCircle, Copy, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HomePage } from './pages/HomePage';
 import { RecipePage } from './pages/RecipePage';
@@ -806,7 +806,7 @@ function AppContent() {
               ) : (
                 <button
                   onClick={handleLogin}
-                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-medium transition-colors shadow-md hover:shadow-lg"
+                  className="flex items-center gap-2 border border-stone-200 hover:bg-stone-50 text-stone-600 px-5 py-2.5 rounded-2xl text-sm font-medium transition-colors"
                 >
                   <LogIn size={16} />
                   Login
