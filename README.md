@@ -1,8 +1,8 @@
 <div align="center">
 <img width="1200" height="475" alt="ReciBee Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 
-# 🐝 ReciBee
-### *Fork the Flavor*
+# ReciBee
+### *our Recipe, Your Way*
 
 [![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?logo=vite)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?logo=react)](https://react.dev/)
@@ -17,13 +17,13 @@
 
 ## 📖 Overview
 
-**ReciBee** is a Git-inspired recipe management platform designed for technical food enthusiasts. It brings the power of version control and collaboration to your kitchen, allowing you to "fork" your favorite recipes, tweak them to perfection, and share your versions with the world.
+**ReciBee** is a Git-inspired recipe management platform designed for technical food enthusiasts. It brings the power of version control and collaboration to your kitchen, allowing you to "tweak" your favorite recipes, tweak them to perfection, and share your versions with the world.
 
 Whether you're importing a complex meal from a blog or documenting a family heirloom, ReciBee provides the tools to ensure your culinary data is clean, structured, and easy to evolve.
 
 ## ✨ Features
 
-- 🍴 **Git-Inspired Workflow**: Fork recipes to create your own variations while maintaining a link to the original.
+- 🍴 **Git-Inspired Workflow**: tweak recipes to create your own variations while maintaining a link to the original.
 - 🤖 **AI-Powered Import**: Extract recipes from any URL or raw text using Google Gemini AI.
 - ⭐ **Star System**: Save your favorite recipes to your personal collection.
 - 👤 **User Profiles**: Showcase your culinary contributions and follow other chefs.
