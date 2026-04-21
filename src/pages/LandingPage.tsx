@@ -522,28 +522,28 @@ export function LandingPage() {
                 className="bg-white border border-kitchen-border p-10 md:p-14 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_40px_80px_-12px_rgba(234,88,12,0.12)] rounded-[2rem] relative group transition-all duration-700"
               >
                 <div className="flex flex-col space-y-8 text-left">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="flex flex-wrap items-center gap-3">
                       <span className="px-3 py-1 border border-stone-200 text-[10px] font-bold text-stone-500 uppercase tracking-[0.15em] rounded-lg bg-stone-50/50">Public Recipe</span>
                       <span className="px-3 py-1 bg-orange-50 text-kitchen-primary text-[10px] font-bold uppercase tracking-[0.15em] flex items-center gap-2 rounded-lg border border-orange-100/50">
                         <div className="w-1.5 h-1.5 bg-kitchen-primary rounded-full animate-pulse" />
                         Modified Tweak
                       </span>
                     </div>
-                    <button className="flex items-center gap-2 bg-stone-100/50 border border-stone-200 px-6 py-3 rounded-2xl text-xs font-bold text-stone-700 hover:bg-stone-200/50 transition-all hover:scale-105 active:scale-95">
+                    <button className="flex items-center justify-center gap-2 bg-stone-100/50 border border-stone-200 px-6 py-3 rounded-2xl text-xs font-bold text-stone-700 hover:bg-stone-200/50 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto">
                       <Pencil size={16} strokeWidth={2.5} className="text-kitchen-primary" />
                       SAVE NEW VERSION
                     </button>
                   </div>
 
                   <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-4">
-                    <h3 className="text-3xl md:text-4xl font-serif font-bold tracking-tight text-kitchen-text leading-tight">
-                      <span>Carrot & Ginger Soup — <span className="italic text-stone-400">Bee's Tweak</span></span>
+                    <h3 className="text-2xl md:text-4xl font-serif font-bold tracking-tight text-kitchen-text leading-tight">
+                      <span>Authentic Guacamole — <span className="italic text-stone-400">Bee's Tweak</span></span>
                     </h3>
                     <span className="text-xs text-stone-400 font-bold uppercase tracking-widest whitespace-nowrap">Updated 10 Apr 2026</span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-8 text-xs text-stone-500 font-bold uppercase tracking-widest pt-4 border-t border-stone-100">
+                  <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-xs text-stone-500 font-bold uppercase tracking-widest pt-4 border-t border-stone-100">
                     <div className="flex items-center gap-2 group/stat cursor-pointer hover:text-kitchen-primary transition-colors">
                       <Users size={16} strokeWidth={2} />
                       <span>{12} likes</span>
@@ -573,24 +573,24 @@ export function LandingPage() {
                 className="bg-white border border-kitchen-border p-10 md:p-14 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_40px_80px_-12px_rgba(234,88,12,0.12)] rounded-[2rem] relative group/secondary transition-all duration-700 opacity-60 grayscale hover:grayscale-0 hover:opacity-100"
               >
                 <div className="flex flex-col space-y-8 text-left">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="flex flex-wrap items-center gap-3">
                       <span className="px-3 py-1 border border-stone-200 text-[10px] font-bold text-stone-500 uppercase tracking-[0.15em] rounded-lg bg-stone-50/50">Origin Source</span>
                     </div>
-                    <button className="flex items-center gap-2 bg-stone-100/50 border border-stone-200 px-6 py-3 rounded-2xl text-xs font-bold text-stone-700 hover:bg-stone-200/50 transition-all">
+                    <button className="flex items-center justify-center gap-2 bg-stone-100/50 border border-stone-200 px-6 py-3 rounded-2xl text-xs font-bold text-stone-700 hover:bg-stone-200/50 transition-all w-full sm:w-auto">
                       <Search size={16} strokeWidth={2.5} />
                       VIEW ORIGINAL
                     </button>
                   </div>
 
                   <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-4">
-                    <h3 className="text-3xl md:text-4xl font-serif font-bold tracking-tight text-kitchen-text leading-tight">
-                      <span>Pure Carrot & Ginger Soup</span>
+                    <h3 className="text-2xl md:text-4xl font-serif font-bold tracking-tight text-kitchen-text leading-tight">
+                      <span>One-pan Baked Butter Chicken</span>
                     </h3>
                     <span className="text-xs text-stone-400 font-bold uppercase tracking-widest whitespace-nowrap">Updated 9 Apr 2026</span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-8 text-xs text-stone-500 font-bold uppercase tracking-widest pt-4 border-t border-stone-100">
+                  <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-xs text-stone-500 font-bold uppercase tracking-widest pt-4 border-t border-stone-100">
                     <div className="flex items-center gap-2">
                       <Star size={16} strokeWidth={2} />
                       <span>45 likes</span>
